@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rugby Manager 26/27</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a1026">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a 1990s management-sim desk. Club-coloured title bar, blocky menu, dense ruled tables on navy. */
+:root{--bg:#0a1026;--panel:#111a3a;--panel2:#16224a;--line:#2b3b72;--ink:#e9edf8;--dim:#93a0c8;--hi:#ffd23f;--acc:#5fd0ff;--good:#5be08a;--warn:#ffb347;--bad:#ff7272;
+--display:'Saira Condensed','Arial Narrow',Arial,sans-serif;--body:Verdana,Tahoma,Geneva,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--body)}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+h1,h2{font-family:var(--display);text-transform:uppercase;letter-spacing:.04em;margin:0;text-wrap:balance}
+p{margin:.5em 0}.dim{color:var(--dim)}.small{font-size:.86em}.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}.hi{color:var(--hi)}.big{font:700 22px var(--display);color:var(--hi)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--hi);outline-offset:1px}
+.btn{background:#22326a;border:2px solid;border-color:#5a6fb5 #0b1230 #0b1230 #5a6fb5;padding:7px 12px;cursor:pointer;font-weight:700;color:var(--ink)}
+.btn:active{border-color:#0b1230 #5a6fb5 #5a6fb5 #0b1230}
+.btn.go{background:#1c7a3c;border-color:#5fd08a #0a3318 #0a3318 #5fd08a}.btn.danger{background:#7a1c1c;border-color:#d06a6a #330a0a #330a0a #d06a6a}.btn.sm{padding:3px 8px;margin-right:4px}
+select,input[type=text],input[type=number]{background:#0a1230;border:2px solid;border-color:#0b1230 #5a6fb5 #5a6fb5 #0b1230;padding:6px 8px;max-width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.row.end{justify-content:flex-end}
+.shell{max-width:1500px;margin:0 auto;display:grid;grid-template-columns:1fr;min-height:100%}
+.top{display:flex;align-items:center;gap:10px;padding:8px 12px;background:linear-gradient(90deg,var(--c1),color-mix(in srgb,var(--c1) 55%,#000));border-bottom:4px solid var(--c2);position:sticky;top:0;z-index:5}
+.crest{width:26px;height:34px;flex:none;background:linear-gradient(90deg,var(--c1) 50%,var(--c2) 50%);border:2px solid #fff;border-radius:0 0 13px 13px}
+.who{display:flex;flex-direction:column;min-width:0;flex:1}.who strong{font:700 20px/1.1 var(--display);text-transform:uppercase;letter-spacing:.04em;color:#fff;text-shadow:1px 1px 0 #000}.who span{font-size:11px;color:#fff;opacity:.9;text-shadow:1px 1px 0 #000}
+.bank{display:flex;flex-direction:column;align-items:flex-end;color:#fff;text-shadow:1px 1px 0 #000}.bank span{font-size:10px;text-transform:uppercase}.bank strong{font:700 17px var(--display)}
+.cont{display:flex;flex-direction:column;align-items:center;line-height:1.15}.cont small{font-weight:400;font-size:10px;opacity:.9}
+.nav{display:flex;overflow-x:auto;background:#060a1a;border-bottom:2px solid var(--line)}
+.nav button{flex:none;background:none;border:0;border-right:1px solid var(--line);padding:10px 12px;cursor:pointer;font:700 14px var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--dim)}
+.nav button.on{background:var(--hi);color:#101010}.nav i{font-style:normal;background:var(--bad);color:#000;padding:0 5px;margin-left:3px}
+.main{padding:12px 16px 40px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);padding:10px 12px;min-width:0}
+.panel h2,.modal h2{font-size:18px;color:var(--hi);border-bottom:2px solid var(--line);padding-bottom:4px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.h2x{font:400 11px var(--body);color:var(--dim);text-transform:none;letter-spacing:0}
+.msg{background:#3a2c05;border:1px solid var(--warn);padding:8px 10px;margin:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font:700 .95em var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--hi);text-align:left;padding:4px 6px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:4px 6px;border-bottom:1px solid #1c2954;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--panel2)}
+.n{text-align:right}.c{text-align:center}.r{text-align:right}.nm{font-weight:700}
+tr.me td{background:#27356e}tr.cut td{border-bottom:2px dashed var(--hi)}tr.sep td{font:700 12px var(--display);text-transform:uppercase;color:var(--dim);background:#060a1a}
+tr.off td{color:var(--dim)}.pickrow{cursor:pointer}.pickrow:hover td{background:#2c3d80}
+.tag{font-size:9px;padding:1px 3px;border:1px solid currentColor;vertical-align:middle}
+.res td.sc,.sc{text-align:center;font:700 15px var(--display);color:var(--hi)}.res td{width:40%}.res td.sc{width:20%}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tiles.t4{grid-template-columns:repeat(4,1fr);margin:8px 0}
+.tiles>div{background:var(--panel2);border:1px solid var(--line);padding:6px 8px;display:flex;flex-direction:column;min-width:0}
+.tiles span{font-size:10px;text-transform:uppercase;color:var(--dim)}.tiles strong{font:700 24px/1.1 var(--display);color:var(--hi)}.tiles strong.sm{font-size:15px;line-height:1.25}
+.news{list-style:none;margin:0;padding:0}.news li{display:grid;grid-template-columns:86px 1fr;gap:0 8px;padding:6px 0;border-bottom:1px solid #1c2954}.news .when{grid-row:span 2;color:var(--dim);font-size:11px}.news li>span:last-child{color:var(--dim)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:4px}.field label{font:700 13px var(--display);text-transform:uppercase;color:var(--hi)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.bar{height:16px;background:#060a1a;border:1px solid var(--line)}.bar div{height:100%;background:linear-gradient(90deg,var(--good),var(--warn))}
+.led td{white-space:normal}.help{margin:0;padding-left:18px;max-width:65ch}.help li{margin:4px 0}
+.veil{position:fixed;inset:0;background:rgba(3,6,18,.8);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto;z-index:20}
+.modal{background:var(--panel);border:2px solid var(--hi);padding:12px;width:min(560px,100%)}
+.attrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 14px;margin:8px 0}.attrs div{display:flex;justify-content:space-between;border-bottom:1px solid #1c2954;padding:3px 0}.attrs b{font:700 16px var(--display)}
+.offer{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--panel2);padding:8px;border:1px solid var(--line)}.offer input{width:120px}
+.start{max-width:860px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:14px}
+.title{border-left:10px solid var(--hi);padding:6px 0 6px 14px}.title h1{font-size:clamp(40px,11vw,72px);line-height:.95;color:#fff}.eyebrow{color:var(--hi);font:700 14px var(--display);text-transform:uppercase;letter-spacing:.12em;margin:0}.sub{color:var(--dim);max-width:52ch}
+.clubs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+.clubpick{display:grid;grid-template-columns:22px 1fr auto;gap:0 10px;align-items:center;text-align:left;background:var(--panel2);border:2px solid;border-color:#5a6fb5 #0b1230 #0b1230 #5a6fb5;padding:8px 10px;cursor:pointer}
+.clubpick .sw{grid-row:span 2;width:22px;height:30px;background:linear-gradient(90deg,var(--c1) 50%,var(--c2) 50%);border:1px solid #fff}.clubpick .cn{font:700 18px var(--display);text-transform:uppercase}.clubpick .cs{font:700 15px var(--display);color:var(--hi)}.clubpick .cg{grid-column:2/4;font-size:11px;color:var(--dim)}
+.board{background:#03060f;border:2px solid var(--hi);padding:10px}
+.bd{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto minmax(0,1fr);gap:6px;align-items:center}
+.tn{font:700 clamp(11px,3.3vw,30px) var(--display);text-transform:uppercase;border-bottom:4px solid var(--k);padding-bottom:2px;min-width:0}.tn:last-child{text-align:right}
+.bs{font:700 clamp(28px,8.5vw,64px)/1 var(--display);color:var(--hi);min-width:1.2em;text-align:center}.clock{font:700 18px var(--display);background:var(--hi);color:#000;padding:2px 8px}
+.ticker{margin:10px 0 0;padding:8px 10px;background:#0d1533;border-left:6px solid var(--acc);min-height:3.2em;font-size:14px}
+.ticker.k-try{border-color:var(--good);color:var(--good);font-weight:700}.ticker.k-kick{border-color:var(--hi)}.ticker.k-card{border-color:var(--bad);color:var(--bad)}
+.feed{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}.feed li{padding:4px 0;border-bottom:1px solid #1c2954;display:grid;grid-template-columns:34px 1fr;gap:6px}.feed span{color:var(--dim);text-align:right}
+.feed .k-try{color:var(--good);font-weight:700}.feed .k-card{color:var(--bad)}.feed .k-kick{color:var(--hi)}.feed .k-sub{color:var(--dim)}.feed .k-ht,.feed .k-ft{color:var(--acc);font-weight:700}
+.ms td{width:33%}.pmrow{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:10px}.pm{display:flex;flex-direction:column}.pm strong{font:700 22px var(--display);text-transform:uppercase}.pm span{color:var(--dim);font-size:11px}.pmrow .pm:last-child{text-align:right}.vs{font:700 18px var(--display);color:var(--hi)}
+@media (max-width:520px){.who span{display:none}.who strong{font-size:16px}.bank strong{font-size:14px}.tiles.t4{grid-template-columns:repeat(2,1fr)}.main{padding:10px 16px 40px}}
+@media (min-width:900px){.shell{grid-template-columns:150px 1fr}.top{grid-column:1/3}.nav{flex-direction:column;overflow:visible;border-right:2px solid var(--line);border-bottom:0;align-self:start;position:sticky;top:58px}.nav button{border-right:0;border-bottom:1px solid var(--line);text-align:left}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+textarea{width:100%;background:#0a1230;border:2px solid;border-color:#0b1230 #5a6fb5 #5a6fb5 #0b1230;padding:6px 8px;font:11px/1.3 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);word-break:break-all}
+button.th{background:none;border:0;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;white-space:nowrap}button.th.on{color:#fff;text-decoration:underline}
+.filters{align-items:center}.clubpick .cs{white-space:nowrap}
+@media (min-width:900px){body{font-size:14px}.shell.solo{grid-template-columns:1fr}.shell.solo .top{grid-column:1}.ticker{font-size:17px}.feed{max-height:520px}.feed li{grid-template-columns:44px 1fr}.nav button{font-size:16px;padding:12px 14px}.shell{grid-template-columns:170px 1fr}.panel h2,.modal h2{font-size:21px}td,th{padding:6px 8px}}
+@media (min-width:1300px){body{font-size:15.5px}.who strong{font-size:26px}.who span{font-size:13px}.bank strong{font-size:22px}.ticker{font-size:20px}.shell{grid-template-columns:190px 1fr}.tiles strong{font-size:30px}.tiles strong.sm{font-size:18px}.btn{padding:9px 16px}}
+.tn{overflow-wrap:break-word}
+.rt{font-weight:700}td.rt{font-family:var(--display);font-size:1.15em}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// Squads: 2026-27 season. Names and positions from published squad lists; ratings and ages are estimates.
+var CLUBS = [
+{id:'BAT',name:'Bath',ground:'The Rec',cap:14509,c1:'#1e4fa3',c2:'#0b0b0b',squad:{
+LP:['Beno Obano|80|31','Jamie Bhatti|75|33','Scott Kirk|68|23','Ioan Emanuel|66|21'],
+HK:['Tom Dunn|81|33','Kepu Tuipulotu|78|20','Dan Frost|76|28','Max Pearce|64|21'],
+TP:['Will Stuart|86|30','Archie Griffin|77|25','Vilikesa Sela|74|21','Kieran Verden|68|22'],
+LK:['Charlie Ewels|82|31','Quinn Roux|79|35','Ross Molony|79|32','Ewan Richards|72|24','Enoch Opoku-Gyamfi|68|20'],
+BR:['Sam Underhill|87|30','Guy Pepper|86|23','Ted Hill|85|27','Dan du Preez|82|31','Miles Reid|80|27','Josh Bayliss|79|29','Jaco Coetzee|76|30'],
+SH:['Ben Spencer|87|34','Tom Carr-Smith|75|23','Bernard van der Linde|73|26'],
+FH:['Finn Russell|92|34','Ciaran Donoghue|73|24','Will Roue|62|20'],
+CE:['Ollie Lawrence|87|27','Max Ojomoh|84|26','Cameron Redpath|81|26','Louie Hennessey|73|22'],
+WG:['Henry Arundell|85|24','Joe Cokanasiga|81|28','Will Muir|80|30','Tyler Offiah|66|20'],
+FB:['Santi Carreras|84|28','Tom de Glanville|79|26','Austin Emens|68|23']}},
+{id:'BRI',name:'Bristol Bears',ground:'Ashton Gate',cap:27000,c1:'#12284c',c2:'#c8102e',squad:{
+LP:['Ellis Genge|89|31','Jake Woolmore|73|35','Andrew Turner|67|23'],
+HK:['Gabriel Oghre|78|28','Harry Thacker|76|32','Bryn Gordon|68|26','Tom Doughty|65|25'],
+TP:['Max Lahiff|76|36','George Kloska|74|26','Lovejoy Chawatama|72|33','Jimmy Halliwell|64|22'],
+LK:['Pedro Rubiolo|79|23','Joe Batley|78|30','Josh Caulfield|74|29','Joe Owen|69|24'],
+BR:['Viliame Mata|84|35','Fitz Harding|82|27','Steven Luatua|79|35','Benjamín Grondona|78|22','Luka Ivanishvili|76|23','Harry Wells|72|33','Khalik Kareem|72|22','Ethan Staddon|70|23'],
+SH:['Harry Randall|83|28','Kieran Marmion|78|34','Oscar Lennon|66|24'],
+FH:['Tom Jordan|83|28','AJ MacGinty|82|36','Sam Worsley|68|22'],
+CE:['Benhard Janse van Rensburg|87|29','Kalaveti Ravouvou|80|27','James Williams|77|27','Max Clark|71|30'],
+WG:['Louis Rees-Zammit|87|25','Gabriel Ibitoye|84|28','Jack Bates|72|25'],
+FB:['Noah Heward|74|25','Tobi Wilson|70|24']}},
+{id:'EXE',name:'Exeter Chiefs',ground:'Sandy Park',cap:15600,c1:'#1a1a1a',c2:'#d9d9d9',squad:{
+LP:['Nika Abuladze|76|30','Ethan Burger|73|25','Will Goodrick-Clarke|72|30','Archie McArthur|66|22'],
+HK:['Joseph Dweba|76|30','Max Norey|74|25','Jack Yeandle|72|36','Julian Heaven|66|23'],
+TP:['Josh Iosefa-Scott|77|29','Ehren Painter|74|28','Jimmy Roots|72|26','Bachuki Tchumbadze|70|22'],
+LK:['Dafydd Jenkins|85|23','Andrea Zambonin|80|26','Harry Wilson|75|25','Lewis Pearson|73|26','Joe Bailey|68|21'],
+BR:['Tom Hooper|84|25','Ethan Roots|82|28','Greg Fisilau|82|23','Ross Vintcent|81|24','Richard Capstick|76|26','Kane James|72|21','Finn Worley-Brady|66|21'],
+SH:['Stephen Varney|80|25','Tom Cairns|74|26','Jake Murray|72|26'],
+FH:['Harvey Skinner|74|28','Will Haydon-Wood|73|25','Ben Coen|68|21'],
+CE:['Henry Slade|86|33','Dallas McLeod|78|27','Will Butt|76|26','Zack Wimbush|73|23','Nick Lilley|62|20'],
+WG:['Immanuel Feyi-Waboso|89|23','Paul Brown-Bampoe|77|24','Campbell Ridl|74|21','Olly Woodburn|73|34'],
+FB:['Ben Hammersley|72|24','Tommy Wyatt|71|27','Tom Burton|63|20']}},
+{id:'GLO',name:'Gloucester',ground:'Kingsholm',cap:16115,c1:'#c8102e',c2:'#ffffff',squad:{
+LP:['Val Rapava-Ruskin|78|33','Jamal Ford-Robinson|73|33','Ciaran Knight|72|28'],
+HK:['Dewi Lake|85|27','Seb Blake|75|24','Jack Innard|72|30'],
+TP:['Afolabi Fasogbon|78|22','Kirill Gotovtsev|74|39'],
+LK:['Jean Kleyn|82|33','Joe Joyce|76|32','Arthur Clark|76|24','Freddie Thomas|72|24','Eliot Salt|68|26'],
+BR:['Jac Morgan|90|26','Lewis Ludlow|79|32','Jack Clement|78|25','James Venter|77|30','Harry Taylor|70|23','Deian Gwynne|70|20'],
+SH:['Dan Robson|78|34','Mikey Austin|68|21'],
+FH:['Charlie Atkinson|78|25','George Barton|73|26'],
+CE:['Seb Atkinson|84|24','Max Llewellyn|81|27','Will Joseph|77|24'],
+WG:['Ollie Thorley|80|30','Josh Hathaway|77|23','Ben Loader|76|28','Jake Morris|73|26','Junior Denny|64|18'],
+FB:['Ben Redshaw|76|21']}},
+{id:'HAR',name:'Harlequins',ground:'Twickenham Stoop',cap:14800,c1:'#7a1f3d',c2:'#3fa9d6',squad:{
+LP:['Fin Baxter|85|24','Harry Johnson-Holmes|74|29','Boris Wenger|72|25','Simon Kerrod|68|33'],
+HK:['Jack Walker|77|30','Sam Riley|73|25','Jack Musk|70|26'],
+TP:['Titi Lamositele|75|31','Pedro Delgado|74|28','Harry Williams|74|35'],
+LK:['Guido Petti|82|31','Kieran Treadwell|76|31','James Dun|74|26','Jonny Green|66|22'],
+BR:['Chandler Cunningham-South|86|23','Alex Dombrandt|85|29','Jack Kenningham|82|26','Will Evans|81|29','James Chisholm|76|31','Zach Carr|66|21'],
+SH:['Will Porter|78|27','Lucas Friday|78|20','Stuart Townsend|70|31'],
+FH:['Marcus Smith|91|27','Sam Marshall|64|21','Connor Slevin|62|20'],
+CE:['Oscar Beard|81|24','Luke Northmore|80|29','James Lang|74|31','Ben Waghorn|72|22','Bryn Bradley|68|21'],
+WG:['Cadan Murley|84|27','Rodrigo Isgró|80|27','Cassius Cleaves|75|23','Cameron Anderson|72|26'],
+FB:['George Furbank|86|30','Tyrone Green|82|28','Nick David|76|27']}},
+{id:'LEI',name:'Leicester Tigers',ground:'Welford Road',cap:25849,c1:'#00693e',c2:'#b01c2e',squad:{
+LP:['Mako Vunipola|78|35','Tarek Haffar|74|24','Archie van der Flier|70|22'],
+HK:['Jamie Blamire|77|28','Charlie Clare|75|34','Finn Theobald-Thomas|72|23','Sam Moli|66|27'],
+TP:['Joe Heyes|85|27','Joel Sclavi|80|32','Will Hurd|74|27','Ale Loman|66|23'],
+LK:['Ollie Chessum|88|26','Cameron Henderson|77|26','Elliott Stooke|74|33','Lewis Chessum|73|23','James Thompson|66|22'],
+BR:['Tommy Reffell|86|27','Aaron Wainwright|85|29','Olly Cracknell|80|32','Emeka Ilione|78|24','Finn Carnduff|76|22','Joaquín Moro|74|24','Joshua Manz|66|21'],
+SH:['Jack van Poortvliet|85|25','Tom Whiteley|75|30','Ollie Allan|68|22'],
+FH:['Orlando Bailey|78|25','Billy Searle|76|30','Charlie Titcombe|68|24'],
+CE:['Solomone Kata|78|31','Will Wand|78|24','Joseph Woodward|77|23','Joe Jenkins|72|23'],
+WG:['Adam Radwan|82|28','Ollie Hassell-Collins|82|27','Gabriel Hamer-Webb|76|25','Ryan Crowley|64|21'],
+FB:['Freddie Steward|88|25']}},
+{id:'NEW',name:'Newcastle Red Bulls',ground:'Kingston Park',cap:10200,c1:'#14213d',c2:'#d0142c',squad:{
+LP:['Pouri Rakete-Stones|76|28','Tom West|75|30','Murray McCallum|72|30','Adam Brocklebank|70|30'],
+HK:['George Turner|80|34','George McGuigan|77|33','Zuriel Togiatama|74|27'],
+TP:['Elliot Millar Mills|78|34','Francisco Moreno|76|24','Richard Palframan|72|32','James Harper|70|26'],
+LK:['Franco Molina|80|29','Cam Jordan|75|26','Max Hicks|73|27','Oscar Usher|66|22','Adam Scott|64|21'],
+BR:['Hoskins Sotutu|86|28','Tom Christie|80|28','Rusi Tuima|76|26','Sam Graham|70|25','Ollie Leatherbarrow|70|26','Reuben Parsons|66|21'],
+SH:['Raffi Quirke|80|25','Simón Benítez Cruz|76|26','Joe Davis|66|22'],
+FH:['Brett Connon|74|29','Zack Henry|74|31','Ethan Grayson|68|23'],
+CE:['Chris Harris|79|35','Alex Hearle|76|26','Sammy Arnold|75|30','Cam Hutchison|74|28','Will Rigg|72|25'],
+WG:['Christian Wade|79|35','Werner Kok|77|33','Obi Ene|72|24','Harrison Obatoyinbo|72|26'],
+FB:['Josh Hodge|80|26','Benjamín Elizalde|74|22']}},
+{id:'NOR',name:'Northampton Saints',ground:"Franklin's Gardens",cap:15249,c1:'#0a5c36',c2:'#d4af37',squad:{
+LP:['Danilo Fischetti|83|28','Emmanuel Iyogun|79|25','Leftheri Zigiriadis|72|24'],
+HK:['Curtis Langdon|83|29','Robbie Smith|75|27','Henry Walker|72|28','Craig Wright|70|23'],
+TP:['Trevor Davison|79|34','Cleopas Kundiona|72|27','Ion Neculai|72|25','Luke Green|68|24'],
+LK:['Alex Coles|86|27','JJ van der Mescht|82|27','Tom Lockett|76|23','Chunya Munga|75|26','Ed Prowse|72|25'],
+BR:['Henry Pollock|91|21','Tom Pearson|84|27','Josh Kemeny|80|28','Callum Chick|77|30','Josh Taylor|72|25','Archie Benson|66|20'],
+SH:['Alex Mitchell|90|29','Archie McParland|75|22','Jonny Weimann|68|21'],
+FH:['Fin Smith|90|24','Anthony Belleau|78|30','Hugh Shields|62|19'],
+CE:['Fraser Dingwall|85|27','Rory Hutchinson|81|30','Tom Litchfield|76|23','Toby Thame|72|22'],
+WG:['Tommy Freeman|91|25','Ollie Sleightholme|83|26','Edoardo Todaro|78|20','Amena Caqusau|70|23','James Martin|68|22'],
+FB:['George Hendy|83|24','James Pater|68|19']}},
+{id:'SAL',name:'Sale Sharks',ground:'Salford Community Stadium',cap:12000,c1:'#0e2a5a',c2:'#e87722',squad:{
+LP:['Bevan Rodd|84|26','Nicky Smith|84|32','Simon McIntyre|74|35'],
+HK:['Luke Cowan-Dickie|84|33','Nathan Jibulu|74|23','Ethan Caine|70|26'],
+TP:['Asher Opoku-Fordjour|84|22','Tomas Francis|76|34','Cebo Dlamini|70|26'],
+LK:['Ernst van Rhyn|78|29','Christ Tshiunza|78|24','Ben Bamber|76|25','Tom Burrow|70|22'],
+BR:['Tom Curry|91|28','Ben Curry|88|28','Courtney Lawes|82|37','Jacques Vermeulen|76|31','Sam Dugdale|76|27','Elia Canakaivata|76|28','Tristan Woodman|68|22'],
+SH:['Gus Warr|78|27','Xavier Roe|76|27'],
+FH:['George Ford|89|33','Alex Lozowski|77|33','Ollie Davies|62|20'],
+CE:['Joe Marchant|84|30','Rekeiti Ma\'asi-White|80|23','Marius Louw|78|31'],
+WG:['Tom Roebuck|86|25','Arron Reed|80|27','Tom O\'Flaherty|76|32','Ponipate Loganimasi|76|28'],
+FB:['Joe Carpenter|78|25','Luke James|70|26']}},
+{id:'SAR',name:'Saracens',ground:'StoneX Stadium',cap:10500,c1:'#101010',c2:'#d0142c',squad:{
+LP:['Rhys Carré|80|28','Eroni Mawi|76|30','Phil Brantingham|72|24'],
+HK:['Jamie George|86|36','Theo Dan|82|25','James Hadfield|68|23'],
+TP:['Marcus Street|77|27','Alec Clarey|73|32','Harvey Beaton|70|23'],
+LK:['Maro Itoje|92|32','George Martin|86|25','Nick Isiekwe|80|28','Hugh Tizard|78|26'],
+BR:['Ben Earl|91|28','Juan Martín González|85|26','Alfie Barbeary|83|26','Andy Onyeama-Christie|81|27','Toby Knight|76|24','Nathan Michelow|72|22'],
+SH:['Tomos Williams|88|31','Charlie Bracken|72|22'],
+FH:['Owen Farrell|85|35','Fergus Burke|82|27'],
+CE:['Nick Tompkins|82|31','Lucio Cinti|80|26','Olly Hartley|78|24','Angus Hall|68|21'],
+WG:['Noah Caluori|82|20','Rotimi Segun|76|29','Tobias Elliott|76|23','Jack Bracken|70|21'],
+FB:['Elliot Daly|84|34','Max Malins|81|29']}}
+];
+if (typeof module !== 'undefined') module.exports = CLUBS;
+// Overseas transfer market: leading players at Top 14 and United Rugby Championship clubs. Checked against 2026-27 transfer lists where available; ratings and ages are estimates.
+var FOREIGN = [
+{id:'F-TOU',name:'Toulouse',lg:'Top 14',pl:['Antoine Dupont|SH|96|30','Romain Ntamack|FH|90|27','Thomas Ramos|FB|90|31','Blair Kinghorn|FB|87|29','Peato Mauvaka|HK|88|29','Julien Marchand|HK|87|31','Thibaud Flament|LK|88|29','François Cros|BR|86|32','Emmanuel Meafou|LK|88|28','Cyril Baille|LP|85|33','Anthony Jelonch|BR|85|30','Tommaso Menoncello|CE|88|24']},
+{id:'F-UBB',name:'Bordeaux Bègles',lg:'Top 14',pl:['Louis Bielle-Biarrey|WG|93|23','Damian Penaud|WG|91|30','Matthieu Jalibert|FH|89|28','Maxime Lucu|SH|87|33','Yoram Moefana|CE|87|26','Maxime Lamothe|HK|83|28','Ben Tameifuna|TP|83|35','Cameron Woki|BR|83|28','Adam Coleman|LK|81|35','Pete Samu|BR|83|34','Tom Willis|BR|85|27','Jonny Gray|LK|80|32','Madosh Tambwe|WG|82|29']},
+{id:'F-RCT',name:'Toulon',lg:'Top 14',pl:['Charles Ollivon|BR|87|33','Baptiste Serin|SH|84|32','Gabin Villière|WG|83|30','Kyle Sinckler|TP|83|33','David Ribbans|LK|84|31','Lewis Ludlam|BR|82|31','Zach Mercer|BR|84|29','Ben White|SH|82|28','Gaël Dréan|WG|82|26','Paolo Garbisi|FH|82|26','Gaël Fickou|CE|86|32','Huw Jones|CE|86|32']},
+{id:'F-LAR',name:'La Rochelle',lg:'Top 14',pl:['Grégory Alldritt|BR|90|29','Will Skelton|LK|88|34','Pierre Bourgarit|HK|84|29','Oscar Jegou|BR|84|23','Antoine Hastoy|FH|83|29','Nolann Le Garrec|SH|86|24','Davit Niniashvili|WG|84|24','Paul Boudehent|BR|84|27','Reda Wardi|LP|82|31','Jack Nowell|WG|80|33','Ben Healy|FH|81|27']},
+{id:'F-R92',name:'Racing 92',lg:'Top 14',pl:['Josua Tuisova|CE|85|32','Max Spring|FB|81|25','Vinaya Habosi|WG|82|26','Romain Taofifénua|LK|80|36','Guram Gogichashvili|LP|80|28']},
+{id:'F-SFP',name:'Stade Français',lg:'Top 14',pl:['Louis Carbonel|FH|81|27','Sekou Macalou|BR|83|31','Paul Gabrillagues|LK|82|33','Léo Barré|FB|82|24','Peniasi Dakuwaqa|WG|80|28','Giovanni Habel-Küffner|BR|80|31']},
+{id:'F-ASM',name:'Clermont',lg:'Top 14',pl:['Alivereti Raka|WG|81|31','Baptiste Jauneau|SH|82|23','Peceli Yato|BR|82|33','Marcos Kremer|BR|85|29','Irae Simone|CE|80|31','Régis Montagne|TP|80|26']},
+{id:'F-CAS',name:'Castres',lg:'Top 14',pl:['Vilimoni Botitu|CE|81|28','Jeremy Fernandez|SH|79|28','Pierre Popelin|FH|78|30','Adrea Cocagi|CE|79|32','Hamish Watson|BR|81|35']},
+{id:'F-BAY',name:'Bayonne',lg:'Top 14',pl:['Joris Segonds|FH|81|29','Manu Tuilagi|CE|80|35','Sireli Maqala|CE|82|26','Tevita Tatafu|TP|81|24','Cheikh Tiberghien|FB|80|26','Léo Coly|SH|81|27']},
+{id:'F-PAU',name:'Pau',lg:'Top 14',pl:['Émilien Gailleton|CE|85|23','Théo Attissogbe|WG|85|22','Hugo Auradou|LK|83|23','Joe Simmonds|FH|80|29','Santiago Grondona|BR|80|28']},
+{id:'F-MHR',name:'Montpellier',lg:'Top 14',pl:['Billy Vunipola|BR|81|34','Lenni Nouchi|BR|82|23','Arthur Vincent|CE|81|27','Adam Beard|LK|81|30']},
+{id:'F-LOU',name:'Lyon',lg:'Top 14',pl:['Jiuta Wainiqolo|WG|84|27','Baptiste Couilloud|SH|83|29','Mickaël Guillard|LK|85|25','Léo Berdeu|FH|79|28','Ethan Dumortier|WG|80|26','Killian Geraci|LK|79|27']},
+{id:'F-PER',name:'Perpignan',lg:'Top 14',pl:['Sevu Reece|WG|84|29','Posolo Tuilagi|LK|84|22','Tristan Tedder|FB|78|30']},
+{id:'F-LEI',name:'Leinster',lg:'URC',pl:['Dan Sheehan|HK|92|28','Caelan Doris|BR|92|28','Josh van der Flier|BR|89|33','James Lowe|WG|88|34','Hugo Keenan|FB|88|30','Garry Ringrose|CE|88|31','Jamison Gibson-Park|SH|90|34','Tadhg Furlong|TP|87|34','Andrew Porter|LP|89|30','Sam Prendergast|FH|85|23','Joe McCarthy|LK|88|25','RG Snyman|LK|87|31','Jack Conan|BR|86|34','Rónan Kelleher|HK|85|28','Joey Carbery|FH|80|31']},
+{id:'F-MUN',name:'Munster',lg:'URC',pl:['Tadhg Beirne|LK|90|34','Jack Crowley|FH|86|26','Craig Casey|SH|84|27','Calvin Nash|WG|81|29','Gavin Coombes|BR|83|28','Thaakir Abrahams|WG|80|27','Tom Ahern|LK|81|26','Marnus van der Merwe|HK|81|29']},
+{id:'F-ULS',name:'Ulster',lg:'URC',pl:['Stuart McCloskey|CE|84|34','Jacob Stockdale|WG|81|30','Nick Timoney|BR|82|31','Tom Stewart|HK|81|25','Nathan Doak|SH|80|24','Cormac Izuchukwu|BR|82|26','Robert Baloucoune|WG|81|29','Juarno Augustus|BR|80|28','Tom O\'Toole|TP|80|28']},
+{id:'F-CON',name:'Connacht',lg:'URC',pl:['Bundee Aki|CE|86|36','Mack Hansen|WG|85|28','Finlay Bealham|TP|83|35','Cian Prendergast|BR|81|26','Shayne Bolton|WG|78|26','Ciarán Frawley|FH|82|28','Will Connors|BR|79|30']},
+{id:'F-GLA',name:'Glasgow Warriors',lg:'URC',pl:['Sione Tuipulotu|CE|89|29','Rory Darge|BR|86|26','Zander Fagerson|TP|87|30','Kyle Steyn|WG|83|32','George Horne|SH|83|31','Scott Cummings|LK|84|30','Kyle Rowe|WG|82|28','Gregor Brown|BR|81|25','Jamie Ritchie|BR|82|30']},
+{id:'F-EDI',name:'Edinburgh',lg:'URC',pl:['Duhan van der Merwe|WG|87|31','Darcy Graham|WG|86|29','Pierre Schoeman|LP|85|32','Ewan Ashman|HK|83|26','Grant Gilchrist|LK|81|36','Magnus Bradbury|BR|80|31']},
+{id:'F-CAR',name:'Cardiff',lg:'URC',pl:['Taulupe Faletau|BR|83|36','Josh Adams|WG|81|31','Ben Thomas|CE|81|27','Callum Sheedy|FH|79|31','Alex Mann|BR|80|24','Cam Winnett|FB|79|23','Jarrod Evans|FH|78|30']},
+{id:'F-OSP',name:'Ospreys',lg:'URC',pl:['Dan Edwards|FH|79|23','Keiran Williams|CE|79|29','Morgan Morse|BR|79|21','Kieran Hardy|SH|79|30','Rhys Davies|LK|78|28','Marika Koroibete|WG|83|34','Lalakai Foketi|CE|79|31','Liam Wright|BR|79|29']},
+{id:'F-SCA',name:'Scarlets',lg:'URC',pl:['Blair Murray|FB|82|25','Sam Costelow|FH|79|25','Taine Plumtree|BR|80|26','Josh Macleod|BR|81|30','Joe Roberts|CE|79|26','Ellis Mee|WG|79|23','Gareth Anscombe|FH|79|35']},
+{id:'F-DRA',name:'Dragons',lg:'URC',pl:['Aneurin Owen|CE|78|26','Rio Dyer|WG|79|27','Ben Carter|LK|78|25','Elliot Dee|HK|78|32','Angus O\'Brien|FB|76|32']},
+{id:'F-BEN',name:'Benetton',lg:'URC',pl:['Louis Lynagh|WG|82|25','Michele Lamaro|BR|83|28','Sebastian Negri|BR|82|32','Federico Ruzza|LK|83|32','Manuel Zuliani|BR|82|26','Ignacio Brex|CE|83|34','Simone Ferrari|TP|81|32']},
+{id:'F-ZEB',name:'Zebre',lg:'URC',pl:['Simone Gesi|WG|78|25','Giovanni Montemauri|FH|75|25','Giacomo Da Re|FH|76|27','Giovanni Licata|BR|77|29','Tommaso Allan|FH|79|33']},
+{id:'F-BUL',name:'Bulls',lg:'URC',pl:['Handré Pollard|FH|88|32','Canan Moodie|WG|86|24','Willie le Roux|FB|83|37','Cameron Hanekom|BR|86|24','Ruan Nortjé|LK|86|28','Marcell Coetzee|BR|83|35','Jan-Hendrik Wessels|LP|85|25','Hanro Liebenberg|BR|81|31']},
+{id:'F-STO',name:'Stormers',lg:'URC',pl:['Damian Willemse|CE|88|28','Sacha Feinberg-Mngomezulu|FH|91|24','Evan Roos|BR|85|26','Frans Malherbe|TP|85|35','Warrick Gelant|FB|83|31','Salmaan Moerat|LK|84|28','Suleiman Hartzenberg|WG|82|23','Ben-Jason Dixon|BR|84|28','Siya Kolisi|BR|86|35','Cheslin Kolbe|WG|91|33','Wilco Louw|TP|86|32']},
+{id:'F-SHA',name:'Sharks',lg:'URC',pl:['Eben Etzebeth|LK|91|35','Ox Nché|LP|92|31','Bongi Mbonambi|HK|85|35','Makazole Mapimpi|WG|83|36','Lukhanyo Am|CE|83|32','Ethan Hooker|WG|85|23','Jordan Hendrikse|FH|82|25','Andre Esterhuizen|CE|86|32','Thomas du Toit|TP|89|31','Stephan Lewies|LK|78|34']},
+{id:'F-LIO',name:'Lions',lg:'URC',pl:['Quan Horn|FB|80|25','Henco van Wyk|CE|81|25','Francke Horn|BR|81|27','Morné van den Berg|SH|82|28','Ruan Venter|BR|81|23']}
+];
+if (typeof module !== 'undefined') module.exports = FOREIGN;
+// Classic players of the last twenty years, at their peak. Selection and ratings are the author's own.
+var LEGENDS = [
+// Northampton Saints
+'Dylan Hartley|HK|88|Northampton','Steve Thompson|HK|88|Northampton','Soane Tonga\'uiha|LP|86|Northampton','Brian Mujati|TP|85|Northampton','Alex Corbisiero|LP|86|Northampton','Samu Manoa|LK|87|Northampton','Christian Day|LK|82|Northampton','Tom Wood|BR|87|Northampton','Phil Dowson|BR|84|Northampton','Louis Picamoles|BR|89|Northampton','Lee Dickson|SH|83|Northampton','Kahn Fotuali\'i|SH|86|Northampton','Stephen Myler|FH|83|Northampton','Carlos Spencer|FH|88|Northampton','Dan Biggar|FH|89|Northampton','Luther Burrell|CE|84|Northampton','George Pisi|CE|85|Northampton','George North|WG|89|Northampton','Chris Ashton|WG|89|Northampton','Ben Cohen|WG|86|Northampton','Bruce Reihana|FB|86|Northampton','Ben Foden|FB|87|Northampton',
+// Other Premiership greats
+'Martin Castrogiovanni|TP|89|Leicester','Geordan Murphy|FB|87|Leicester','Lewis Moody|BR|87|Leicester','Tom Croft|BR|88|Leicester','Toby Flood|FH|86|Leicester','Marcos Ayerza|LP|88|Leicester','Ben Youngs|SH|88|Leicester','Dan Cole|TP|88|Leicester',
+'Lawrence Dallaglio|BR|90|Wasps','Phil Vickery|TP|87|Wasps','Simon Shaw|LK|87|Wasps','Danny Cipriani|FH|86|Wasps','Joe Launchbury|LK|88|Wasps','Josh Lewsey|FB|87|Wasps',
+'Schalk Brits|HK|89|Saracens','Jacques Burger|BR|87|Saracens','Brad Barritt|CE|85|Saracens','Alex Goode|FB|87|Saracens','George Kruis|LK|87|Saracens',
+'Nick Evans|FH|89|Harlequins','Chris Robshaw|BR|87|Harlequins','Nick Easter|BR|86|Harlequins','Mike Brown|FB|87|Harlequins','Danny Care|SH|87|Harlequins','Joe Marler|LP|87|Harlequins',
+'Francois Louw|BR|88|Bath','Jonathan Joseph|CE|87|Bath','Anthony Watson|WG|88|Bath','Mike Tindall|CE|86|Gloucester','James Simpson-Daniel|WG|85|Gloucester','Jonny May|WG|87|Gloucester',
+'Sébastien Chabal|BR|88|Sale','Jason Robinson|WG|91|Sale','Mark Cueto|WG|86|Sale','Charlie Hodgson|FH|86|Sale','Andrew Sheridan|LP|88|Sale','Faf de Klerk|SH|89|Sale',
+'Jonny Wilkinson|FH|94|Newcastle','Carl Hayman|TP|91|Newcastle','Thomas Waldrom|BR|85|Exeter','Stuart Hogg|FB|89|Exeter',
+// International greats
+'Richie McCaw|BR|97|New Zealand','Dan Carter|FH|97|New Zealand','Kieran Read|BR|93|New Zealand','Ma\'a Nonu|CE|92|New Zealand','Conrad Smith|CE|92|New Zealand','Brodie Retallick|LK|94|New Zealand','Aaron Smith|SH|92|New Zealand','Ben Smith|FB|92|New Zealand',
+'Bryan Habana|WG|93|South Africa','Victor Matfield|LK|93|South Africa','Fourie du Preez|SH|93|South Africa','Schalk Burger|BR|91|South Africa','Tendai Mtawarira|LP|90|South Africa','Bismarck du Plessis|HK|91|South Africa','Duane Vermeulen|BR|91|South Africa',
+'George Smith|BR|91|Australia','David Pocock|BR|93|Australia','Will Genia|SH|90|Australia','Matt Giteau|CE|90|Australia','Israel Folau|FB|90|Australia',
+'Brian O\'Driscoll|CE|95|Ireland','Paul O\'Connell|LK|93|Ireland','Johnny Sexton|FH|93|Ireland','Sean O\'Brien|BR|90|Ireland','Conor Murray|SH|89|Ireland',
+'Alun Wyn Jones|LK|92|Wales','Sam Warburton|BR|90|Wales','Shane Williams|WG|91|Wales','Adam Jones|TP|89|Wales','Jamie Roberts|CE|88|Wales',
+'Thierry Dusautoir|BR|93|France','Morgan Parra|SH|88|France','Wesley Fofana|CE|89|France','William Servat|HK|88|France',
+'Sergio Parisse|BR|93|Italy','Juan Martín Hernández|FH|90|Argentina','Juan Martín Fernández Lobbe|BR|90|Argentina'
+];
+if (typeof module !== 'undefined') module.exports = LEGENDS;
+// Game engine: pure logic, no DOM.
+var E = (function () {
+'use strict';
+var POS = ['LP','HK','TP','LK','BR','SH','FH','CE','WG','FB'];
+var POSN = {LP:'Loosehead prop',HK:'Hooker',TP:'Tighthead prop',LK:'Lock',BR:'Back row',SH:'Scrum-half',FH:'Fly-half',CE:'Centre',WG:'Wing',FB:'Full-back'};
+var SLOTS = ['LP','HK','TP','LK','LK','BR','BR','BR','SH','FH','WG','CE','CE','WG','FB','HK','LP','TP','LK','BR','SH','FH','WG'];
+var ATTR = ['Sc','Li','Ta','Ca','Bd','Pa','Ha','Ki','Pc','St','Di','Gk'];
+var ATTRN = {Sc:'Scrummaging',Li:'Lineout',Ta:'Tackling',Ca:'Carrying',Bd:'Breakdown',Pa:'Passing',Ha:'Handling',Ki:'Kicking',Pc:'Pace',St:'Stamina',Di:'Discipline',Gk:'Goal kicking'};
+var PROF = {
+ LP:[1,.3,.7,.7,.6,.3,.4,.1,.3,.6,.6,0], HK:[.9,1,.7,.7,.7,.4,.5,.1,.4,.7,.6,0], TP:[1,.3,.7,.6,.6,.3,.4,.1,.2,.6,.6,0],
+ LK:[.7,1,.8,.7,.7,.4,.6,.1,.4,.8,.6,0], BR:[.5,.6,1,.9,1,.5,.6,.2,.6,.9,.6,0],
+ SH:[0,0,.6,.4,.4,1,.9,.8,.7,.8,.7,.45], FH:[0,0,.6,.5,.3,1,.9,1,.6,.7,.7,.9], CE:[0,0,.9,.9,.5,.8,.8,.5,.7,.8,.7,.3],
+ WG:[0,0,.6,.8,.3,.6,.8,.4,1,.8,.7,.15], FB:[0,0,.7,.7,.3,.7,.9,.9,.8,.8,.7,.5]};
+var REL = {LP:{TP:.9,HK:.75},TP:{LP:.9,HK:.75},HK:{LP:.75,TP:.75,BR:.7},LK:{BR:.88},BR:{LK:.88,HK:.7},
+ SH:{FH:.8,WG:.75},FH:{CE:.88,FB:.88,SH:.78},CE:{FH:.86,WG:.88,FB:.82},WG:{FB:.92,CE:.86},FB:{WG:.92,FH:.85,CE:.82}};
+var CAP = 7800000, ROUNDS = 18, DEADLINE = 14, MAXSQUAD = 50;
+var FIRST = ['Tom','Jack','Harry','Will','Ollie','Sam','Ben','Joe','Archie','George','Alfie','Charlie','Max','Dan','Josh','Luke','Freddie','Ethan','Callum','Rhys','Finn','Toby','Louis','Jake','Kai'];
+var LAST = ['Hargreaves','Colby','Winstanley','Ibekwe','Penrose','Mallory','Thackeray','Oduya','Brightwell','Carrick','Dunmore','Eastwood','Fairburn','Garside','Holloway','Kessler','Lowther','Merrick','Northcote','Prewett','Quayle','Rowntree','Sefton','Tamati','Wardle'];
+var YEAR = 2026, PSEUDO = {FA:{id:'FA',name:'Free agent',lg:'FA'},RET:{id:'RET',name:'Retired',lg:''},LEG:{id:'LEG',name:'Legends',lg:'LEG'}};
+var MINDEPTH = {LP:3,HK:3,TP:3,LK:4,BR:6,SH:2,FH:2,CE:4,WG:4,FB:2};
+
+function rng(G){ return function(){ G.seed = (G.seed + 0x6D2B79F5) | 0; var t = G.seed; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function clamp(x,a,b){ return x<a?a:x>b?b:x; }
+function isFwd(pos){ return POS.indexOf(pos) < 5; }
+function fam(p,slot){ if(p.pos===slot) return 1; var r = (REL[p.pos] && REL[p.pos][slot]) || (isFwd(p.pos)===isFwd(slot) ? 0.7 : 0.5); return p.hid ? r+(1-r)*(p.hid.Ver/20)*0.45 : r; }
+function mkPa(R,ca,age){ var up = age<=20?4+R()*14:age<=22?2+R()*10:age<=24?R()*7:age<=27?R()*3:0; return Math.min(97,Math.round(ca+up)); }
+function mkHid(R,ca){ var r=function(lo,hi){ return clamp(Math.round(lo+R()*(hi-lo)),1,20); }; return {Con:clamp(Math.round(4+R()*12+(ca-70)/6),1,20),Big:r(4,18),Inj:r(2,16),Drt:r(2,17),Ver:r(3,17)}; }
+function moraleF(p){ return 1+((p.morale==null?60:p.morale)-60)/100*0.07; }
+function condF(c){ return 0.80 + 0.20*c/100; }
+function formAvg(p){ if(!p.form.length) return 6.5; var s=0; for(var i=0;i<p.form.length;i++) s+=p.form[i]; return s/p.form.length; }
+function formF(p){ return 1 + (formAvg(p)-6.5)*0.012; }
+function avail(p){ return !p.inj && !p.susp && !p.intl; }
+function club(id){ var i; if(PSEUDO[id]) return PSEUDO[id]; for(i=0;i<CLUBS.length;i++) if(CLUBS[i].id===id) return CLUBS[i]; for(i=0;i<FOREIGN.length;i++) if(FOREIGN[i].id===id) return FOREIGN[i]; }
+function addLegends(G,R){ var have={}; G.players.forEach(function(p){ have[p.n]=1; }); LEGENDS.forEach(function(s,i){ var a=s.split('|'); if(have[a[0]]) return; var p=addPlayer(G,R,{n:a[0],pos:a[1],ca:+a[2],age:27+i%3,club:'LEG',pa:+a[2]}); p.leg=a[3]; p.hid.Con=Math.max(p.hid.Con,14); p.hid.Big=Math.max(p.hid.Big,14); p.contract=YEAR+3; }); G.leg=1; }
+function abroad(id){ return String(id).charAt(1)==='-'; }
+function addForeign(G,R){ var have={}; G.players.forEach(function(p){ have[p.n]=1; }); FOREIGN.forEach(function(c){ c.pl.forEach(function(s){ var a=s.split('|'); if(!have[a[0]]) addPlayer(G,R,{n:a[0],pos:a[1],ca:+a[2],age:+a[3],club:c.id}); }); }); G.intl=1; }
+function squad(G,cid){ return G.players.filter(function(p){ return p.club===cid; }); }
+function wageBill(G,cid){ return squad(G,cid).reduce(function(t,p){ return t+p.wage; },0); }
+function value(p){ var v = 6000*Math.exp((p.ca-50)/7.2); var a=p.age; v *= a<=23?1.25:a<=28?1:a<=31?0.75:a<=33?0.5:0.3; if(p.contract<=YEAR+1) v*=0.8; return Math.round(v/5000)*5000; }
+function baseWage(p){ return Math.round(18000*Math.exp((p.ca-50)/13)/1000)*1000; }
+
+function addPlayer(G,R,o){
+  var p = {id:G.players.length,n:o.n,pos:o.pos,age:o.age,ca:o.ca,club:o.club,at:{},cond:100,form:[],inj:0,susp:0,apps:0,tries:0,pts:0,rs:0,yc:0,rc:0,listed:false,acad:!!o.acad,contract:2027+Math.floor(R()*3),wage:0};
+  var w = PROF[o.pos];
+  ATTR.forEach(function(k,i){ p.at[k] = clamp(Math.round(o.ca/5*(0.42+0.62*w[i]) + (R()-0.5)*3),1,20); });
+  if(o.pos==='FH'||o.pos==='FB'||o.pos==='SH'||o.pos==='CE') p.at.Gk = clamp(Math.round(p.at.Gk + (R()-0.5)*4),1,20);
+  p.hid = mkHid(R,o.ca); p.morale = 60; p.pa = o.pa || mkPa(R,o.ca,o.age); p.car = {apps:0,tries:0,pts:0}; p.contract = YEAR+1+Math.floor(R()*3);
+  p.wage = baseWage(p); G.players.push(p); return p;
+}
+function genYouth(G,R,cid,pos){ return addPlayer(G,R,{n:FIRST[Math.floor(R()*FIRST.length)]+' '+LAST[Math.floor(R()*LAST.length)],pos:pos,age:18+Math.floor(R()*3),ca:56+Math.floor(R()*9),club:cid,acad:true,pa:Math.min(95,Math.round(64+R()*R()*30))}); }
+function ensureDepth(G,R,cid,fitOnly){
+  var sq = squad(G,cid), made=[];
+  POS.forEach(function(pos){ var n = sq.filter(function(p){ return p.pos===pos && (!fitOnly||avail(p)); }).length; var need = fitOnly ? Math.max(1,MINDEPTH[pos]-2) : MINDEPTH[pos];
+    for(;n<need;n++) made.push(genYouth(G,R,cid,pos)); });
+  return made;
+}
+
+function effSlot(p,slot){ return p.ca*fam(p,slot)*condF(p.cond)*formF(p)*moraleF(p); }
+function pickXV(G,cid){
+  var pool = squad(G,cid).filter(avail), used = {}, sel = [];
+  for(var k=0;k<23;k++) sel.push(null);
+  var order = [1,8,9,0,2,3,4,5,6,7,14,10,13,11,12,15,16,17,20,18,19,21,22];
+  order.forEach(function(i){ var best=null,bs=-1;
+    pool.forEach(function(p){ if(used[p.id]) return; var s = effSlot(p,SLOTS[i]); if(p.pos===SLOTS[i]) s*=1.08; if(p.cond<72) s*=0.9; if(s>bs){ bs=s; best=p; } });
+    if(best){ sel[i]=best.id; used[best.id]=1; } });
+  return sel;
+}
+function selProblems(G,cid,sel){
+  var out=[], seen={};
+  if(!sel) return ['No team selected.'];
+  for(var i=0;i<23;i++){ var id=sel[i];
+    if(id==null){ if(i<15) out.push('No player at number '+(i+1)+'.'); continue; }
+    var p=G.players[id];
+    if(!p || p.club!==cid){ out.push('Number '+(i+1)+' is no longer at the club.'); continue; }
+    if(seen[id]) out.push(p.n+' is picked twice.'); seen[id]=1;
+    if(p.inj) out.push(p.n+' is injured.'); else if(p.susp) out.push(p.n+' is suspended.'); else if(p.intl) out.push(p.n+' is away on international duty.');
+  }
+  return out;
+}
+function xvStrength(G,cid){ var s=pickXV(G,cid),t=0,n=0; for(var i=0;i<15;i++) if(s[i]!=null){ t+=G.players[s[i]].ca; n++; } return n?t/n:0; }
+
+function defaultTac(){ return {style:'bal',ment:'bal',kickg:'bal',pens:'mix',def:'bal',tackle:'norm',ruck:'bal',lineout:'mix',tempo:'norm',kicker:null,autoSubs:true}; }
+function migrate(G){ var R=rng(G), d=defaultTac(); if(!G.year) G.year=2026; YEAR=G.year; if(!G.hist) G.hist=[]; if(G.conf==null) G.conf=60; if(!G.intl) addForeign(G,R); if(!G.leg) addLegends(G,R); G.players.forEach(function(p){ if(!p.hid) p.hid=mkHid(R,p.ca); if(p.morale==null) p.morale=60; if(!p.pa) p.pa=mkPa(R,p.ca,p.age); if(!p.car) p.car={apps:0,tries:0,pts:0}; });
+  Object.keys(G.clubs).forEach(function(k){ var t=G.clubs[k].tac; Object.keys(d).forEach(function(f){ if(t[f]===undefined) t[f]=d[f]; }); }); return G; }
+
+function newGame(userClub, mgr, seed){
+  YEAR = 2026;
+  var G = {v:1,year:2026,hist:[],conf:60,seed:seed|0,mgr:mgr||'Manager',user:userClub,players:[],clubs:{},round:0,phase:'league',news:[],offers:[],bids:[],bidSeq:1,fix:[],po:null,last:null,ledger:{gate:0,central:0,wages:0,costs:0,sales:0,buys:0,prize:0},champion:null};
+  var R = rng(G);
+  CLUBS.forEach(function(c){
+    G.clubs[c.id] = {id:c.id,bal:0,tac:defaultTac(),sel:null,exp:'',t:{p:0,w:0,d:0,l:0,pf:0,pa:0,tf:0,tb:0,lb:0,pts:0}};
+    POS.forEach(function(pos){ (c.squad[pos]||[]).forEach(function(s){ var a=s.split('|'); addPlayer(G,R,{n:a[0],pos:pos,ca:+a[1],age:+a[2],club:c.id}); }); });
+    ensureDepth(G,R,c.id,false);
+    var bill = wageBill(G,c.id); if(bill > CAP*0.96){ var f = CAP*0.96/bill; squad(G,c.id).forEach(function(p){ p.wage = Math.round(p.wage*f/1000)*1000; }); }
+  });
+  addForeign(G,R); addLegends(G,R);
+  setExpectations(G,R,true); listFringe(G,R); makeFixtures(G,R);
+  G.clubs[userClub].sel = pickXV(G,userClub);
+  news(G,'Welcome to '+club(userClub).name,'The board expects you to: '+G.clubs[userClub].exp.toLowerCase()+'. The salary cap is '+money(CAP)+' and the transfer deadline falls after round '+DEADLINE+'.');
+  return G;
+}
+function setExpectations(G,R,first){
+  var rank = CLUBS.map(function(c){ return {id:c.id,s:xvStrength(G,c.id)}; }).sort(function(a,b){ return b.s-a.s; });
+  rank.forEach(function(r,i){ var c=G.clubs[r.id]; c.rank=i+1;
+    c.exp = i<2?'Reach the final':i<4?'Reach the play-offs':i<7?'Finish in the top six':'Avoid finishing bottom';
+    if(first) c.bal = 900000 + Math.round((10-i)*90000 + club(r.id).cap*30);
+    if(first && r.id!==G.user){ var q=R(); c.tac.style = q<0.3?'tight':q<0.65?'bal':'wide'; q=R(); c.tac.def = q<0.3?'blitz':q<0.7?'bal':'drift'; q=R(); c.tac.pens = q<0.25?'goal':q<0.75?'mix':'corner';
+      q=R(); c.tac.ment = q<0.25?'def':q<0.75?'bal':'att'; q=R(); c.tac.kickg = q<0.25?'hand':q<0.7?'bal':'terr'; q=R(); c.tac.tackle = q<0.2?'easy':q<0.8?'norm':'hard'; q=R(); c.tac.ruck = q<0.25?'few':q<0.75?'bal':'hard'; q=R(); c.tac.lineout = q<0.3?'safe':q<0.8?'mix':'long'; }
+  });
+}
+function listFringe(G,R){ CLUBS.forEach(function(c){ if(c.id===G.user) return; var sq=squad(G,c.id).filter(function(p){ return !p.acad; }).sort(function(a,b){ return a.ca-b.ca; }); for(var i=0;i<3&&i<sq.length;i++) if(R()<0.8) sq[i].listed=true; }); }
+function makeFixtures(G,R){
+  var ids = CLUBS.map(function(c){ return c.id; });
+  for(var i=ids.length-1;i>0;i--){ var j=Math.floor(R()*(i+1)); var t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
+  var n=ids.length, half=[];
+  for(var r=0;r<n-1;r++){ var rd=[]; for(var k=0;k<n/2;k++){ var a=ids[k], b=ids[n-1-k]; rd.push((r+k)%2 ? {h:b,a:a,res:null} : {h:a,a:b,res:null}); } half.push(rd); ids.splice(1,0,ids.pop()); }
+  G.fix = half.concat(half.map(function(rd){ return rd.map(function(f){ return {h:f.a,a:f.h,res:null}; }); }));
+}
+function money(v){ var s=v<0?'-':''; v=Math.abs(v); return s+'£'+(v>=1e6?(v/1e6).toFixed(2)+'m':v>=1000?Math.round(v/1000)+'k':v); }
+function news(G,t,b){ G.news.unshift({r:roundLabel(G),t:t,b:b||''}); if(G.news.length>80) G.news.length=80; }
+function roundLabel(G){ return G.phase==='league'?'Round '+(G.round+1):G.phase==='sf'?'Semi-finals':G.phase==='final'?'Final':'Season over'; }
+function dateLabel(G){ var y1=(G.year||2026)+1; if(G.phase==='sf') return '5 Jun '+y1; if(G.phase==='final') return '19 Jun '+y1; if(G.phase==='done') return 'June '+y1;
+  var d = new Date(Date.UTC(G.year||2026,8,26)); d.setUTCDate(d.getUTCDate() + G.round*7 + (G.round>=5?21:0) + (G.round>=10?28:0) + (G.round>=14?14:0));
+  return d.getUTCDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]+' '+d.getUTCFullYear(); }
+
+// ---------- match ----------
+function newMatch(G,hid,aid,opt){
+  opt = opt||{};
+  var M = {h:hid,a:aid,min:0,log:[],done:false,ko:!!opt.ko,neutral:!!opt.neutral,stage:opt.stage||'league',cond:{},pr:{},day:{},sides:[],et:false,pk:null,ht:[0,0]};
+  var R0=rng(G), top=standings(G).slice(0,4).map(function(x){ return x.id; }); M.big = M.ko || (G.round>=6 && top.indexOf(hid)>=0 && top.indexOf(aid)>=0);
+  [hid,aid].forEach(function(cid){
+    var c=G.clubs[cid], sel;
+    if(cid===G.user && c.sel && !selProblems(G,cid,c.sel).length) sel=c.sel.slice(); else sel=pickXV(G,cid);
+    var s={club:cid,xv:sel.slice(0,15),bench:sel.slice(15).filter(function(x){ return x!=null; }),tac:JSON.parse(JSON.stringify(c.tac)),score:0,tries:0,cons:0,pens:0,dgs:0,yc:0,rc:0,ev:0,subs:0,bin:[],start:sel.slice(0,15)};
+    s.auto = cid!==G.user || !!s.tac.autoSubs;
+    sel.forEach(function(id){ if(id!=null){ var p=G.players[id], h=p.hid; M.cond[id]=p.cond; M.pr[id]={mins:0,tr:0,pts:0,r:6.4,yc:0,rc:0,inj:0};
+      M.day[id]=1+(R0()-0.5)*2*(0.02+(20-h.Con)/20*0.10)+(M.big?(h.Big-10)/10*0.04:0); } });
+    M.sides.push(s);
+  });
+  say(M,0,'info',-1,'Kick-off at '+(M.neutral?'Allianz Stadium, Twickenham':club(hid).ground)+'.');
+  return M;
+}
+function say(M,m,k,s,t){ M.log.push({m:m,k:k,s:s,t:t}); }
+function onPitch(G,M,si,i){ var s=M.sides[si], id=s.xv[i]; if(id==null) return null; for(var b=0;b<s.bin.length;b++) if(s.bin[b].slot===i) return null; return G.players[id]; }
+function sideRat(G,M,si){
+  var A=function(i,k){ var p=onPitch(G,M,si,i); return p ? p.at[k]*fam(p,SLOTS[i])*condF(M.cond[p.id])*formF(p)*moraleF(p)*M.day[p.id] : 0; };
+  var sum=function(idx,k){ var t=0; for(var j=0;j<idx.length;j++) t+=A(idx[j],k); return t; };
+  var F=[0,1,2,3,4,5,6,7], B=[8,9,10,11,12,13,14], ALL=F.concat(B);
+  return {
+    scrum:(sum([0,1,2],'Sc')*3+sum([3,4],'Sc')*1.5+sum([5,6,7],'Sc')*0.67)/14*5,
+    line:(A(1,'Li')*3+sum([3,4],'Li')*2+sum([5,6,7],'Li'))/10*5,
+    bd:(sum([5,6,7],'Bd')*2+sum([0,1,2,3,4],'Bd')+sum([11,12],'Bd')*0.5)/12*5,
+    fwd:(sum(F,'Ca')+sum(F,'St')*0.5)/12*5,
+    back:(sum([8,9],'Pa')*1.5+sum([10,11,12,13,14],'Pa')*0.6+sum(B,'Ha')+sum([10,13,14],'Pc')*1.4+sum([11,12],'Ca')*1.3+A(9,'Ki')*0.8)/20.6*5,
+    def:sum(ALL,'Ta')/15*5, kick:(A(8,'Ki')+A(9,'Ki')*2+A(14,'Ki'))/4*5, disc:sum(ALL,'Di')/15*5 };
+}
+function kicker(G,M,si){ var s=M.sides[si], best=null; for(var i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; if(s.tac.kicker===p.id) return p; if(!best||p.at.Gk>best.at.Gk) best=p; } return best; }
+function pickOn(G,M,si,R,wfn){ var c=[],tot=0; for(var i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; var w=wfn(p,i); if(w>0){ c.push([p,i,w]); tot+=w; } } if(!c.length) return null; var x=R()*tot; for(var j=0;j<c.length;j++){ x-=c[j][2]; if(x<=0) return c[j]; } return c[c.length-1]; }
+function doSub(G,M,si,slot,bi,forced){
+  var s=M.sides[si], out=s.xv[slot], inn=s.bench[bi]; if(inn==null) return false;
+  s.xv[slot]=inn; s.bench.splice(bi,1); if(!forced) s.subs++;
+  say(M,M.min,'sub',si,'Substitution for '+club(s.club).name+': '+G.players[inn].n+' on'+(out!=null?' for '+G.players[out].n:'')+'.');
+  return true;
+}
+function bestBench(G,M,si,slot){ var s=M.sides[si], bi=-1, bs=0; s.bench.forEach(function(id,i){ var p=G.players[id], v=p.ca*fam(p,SLOTS[slot]); if(v>bs){ bs=v; bi=i; } }); return bi; }
+function aiSubs(G,M,si){
+  var s=M.sides[si], done=0;
+  for(var b=0;b<s.bench.length && done<2;b++){ var p=G.players[s.bench[b]], best=-1, bc=999;
+    for(var i=0;i<15;i++){ var q=onPitch(G,M,si,i); if(!q||fam(p,SLOTS[i])<0.85) continue; var c=M.cond[q.id] + (q.ca-p.ca)*0.8; if(c<bc){ bc=c; best=i; } }
+    if(best>=0 && (bc<74 || M.min>=62)){ doSub(G,M,si,best,b,false); b--; done++; } }
+}
+function addScore(M,si,pid,pts){ M.sides[si].score+=pts; if(pid!=null) M.pr[pid].pts+=pts; }
+var FW=[0,1,2,3,4,5,6,7], BK=[8,9,10,11,12,13,14];
+function bump(M,p,d){ if(!p) return; var r=M.pr[p.id]; r.r=clamp(r.r+d,1,10); }
+function unit(G,M,si,slots,d){ for(var j=0;j<slots.length;j++) bump(M,onPitch(G,M,si,slots[j]),d); }
+function tm(t){ return {
+  tryFor:(t.style==='wide'?1.03:t.style==='tight'?0.97:1)*(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.06:t.kickg==='terr'?0.92:1),
+  tryAg:(t.def==='blitz'?0.93:t.def==='drift'?1.03:1)*(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.04:t.kickg==='terr'?0.94:1),
+  penAg:(t.def==='blitz'?1.2:t.def==='drift'?0.9:1)*(t.ruck==='hard'?1.2:t.ruck==='few'?0.9:1)*(t.tackle==='hard'?1.15:t.tackle==='easy'?0.9:1),
+  card:(t.def==='blitz'?1.15:1)*(t.tackle==='hard'?1.45:t.tackle==='easy'?0.7:1),
+  bd:t.ruck==='hard'?1.06:t.ruck==='few'?0.94:1,
+  def:(t.ruck==='hard'?0.98:t.ruck==='few'?1.03:1)*(t.tackle==='hard'?1.03:t.tackle==='easy'?0.99:1),
+  drain:(t.tempo==='fast'?1.15:t.tempo==='slow'?0.9:1)*(t.kickg==='hand'?1.05:1)*(t.tackle==='hard'?1.04:1) }; }
+function tryScored(G,M,si,R,maul,txt){
+  var s=M.sides[si];
+  var W=maul?[1,5,1,1.2,1.2,2,2,2.2,0,0,0,0,0,0,0]:[.5,1.2,.5,.6,.6,1.3,1.4,1.5,1.2,1,3,1.8,1.9,3,2.2];
+  var c=pickOn(G,M,si,R,function(p,i){ return W[i]*(maul?1:(p.at.Pc+p.at.Ca)/24); }); if(!c) return;
+  var p=c[0], as=''; s.tries++; M.pr[p.id].tr++; addScore(M,si,p.id,5); bump(M,p,maul?0.6:1.0);
+  if(!maul){ var a=pickOn(G,M,si,R,function(q,i){ return q.id===p.id?0:(i>=8?q.at.Pa:q.at.Pa*0.25); }); if(a && R()<0.75){ bump(M,a[0],0.4); as=' Created by '+a[0].n+'.'; } }
+  unit(G,M,si,maul?FW:BK,0.06); unit(G,M,1-si,maul?FW:BK,-0.1); if(!maul) unit(G,M,1-si,[5,6,7],-0.05);
+  say(M,M.min,'try',si,'TRY! '+txt.replace('%p',p.n).replace('%c',club(s.club).name)+as+' '+score(M));
+  var k=kicker(G,M,si); if(!k) return;
+  var wide = !maul && (c[1]===10||c[1]===13) ? 0.12 : 0;
+  if(R() < clamp(0.47+0.022*k.at.Gk-wide+(R()-0.5)*0.1,0.2,0.97)){ s.cons++; addScore(M,si,k.id,2); bump(M,k,0.2); say(M,M.min,'kick',si,k.n+' adds the conversion. '+score(M)); }
+  else { bump(M,k,-0.2); say(M,M.min,'info',si,k.n+' pulls the conversion wide.'); }
+}
+function score(M){ return '('+club(M.h).name+' '+M.sides[0].score+'-'+M.sides[1].score+' '+club(M.a).name+')'; }
+function pick(R,a){ return a[Math.floor(R()*a.length)]; }
+
+function stepMinute(G,M){
+  if(M.done) return;
+  var R=rng(G); M.min++; var m=M.min, si, i, mod=[tm(M.sides[0].tac),tm(M.sides[1].tac)], mean=[0,0];
+  for(si=0;si<2;si++){ var s=M.sides[si], n=0;
+    for(i=s.bin.length-1;i>=0;i--) if(s.bin[i].until<=m){ say(M,m,'info',si,G.players[s.bin[i].pid].n+' returns from the sin bin.'); s.bin.splice(i,1); }
+    for(i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; M.pr[p.id].mins++; M.cond[p.id]=Math.max(20,M.cond[p.id]-(isFwd(p.pos)?0.5:0.4)*(1.3-p.at.St/40)*mod[si].drain); mean[si]+=p.ca; n++; }
+    mean[si] = n ? mean[si]/15 : 60;
+    if(s.auto && m>=46 && m%4===0 && m<76 && s.subs<8) aiSubs(G,M,si);
+  }
+  // every player's rating drifts toward what his ability, fitness and form on the day deserve against this opposition
+  for(si=0;si<2;si++) for(i=0;i<15;i++){ var q0=onPitch(G,M,si,i); if(!q0) continue; var r0=M.pr[q0.id], tgt=6.55+(q0.ca*fam(q0,SLOTS[i])*M.day[q0.id]*condF(M.cond[q0.id])*moraleF(q0)-mean[1-si])/14; r0.r+=(clamp(tgt,4.5,8.5)-r0.r)*0.012; }
+  var rt=[sideRat(G,M,0),sideRat(G,M,1)];
+  for(si=0;si<2;si++){ rt[si].bd*=mod[si].bd; rt[si].def*=mod[si].def; }
+  var tk=function(t){ return t==='fast'?0.03:t==='slow'?-0.03:0; };
+  if(R() < 0.56+tk(M.sides[0].tac.tempo)+tk(M.sides[1].tac.tempo)){
+    var ctrl=function(r){ return 0.3*r.scrum+0.25*r.line+0.45*r.bd; };
+    var terr=function(a,b){ return M.sides[a].tac.kickg==='terr' ? 0.002+(rt[a].kick-rt[b].kick)/350 : 0; };
+    var pH = clamp(0.5+(M.neutral?0:0.035)+(ctrl(rt[0])-ctrl(rt[1]))/170+terr(0,1)-terr(1,0),0.25,0.75);
+    var a = R()<pH?0:1, d=1-a, A=M.sides[a], D=M.sides[d], ra=rt[a], rd=rt[d];
+    A.ev++;
+    var mix = A.tac.style==='tight'?0.7:A.tac.style==='wide'?0.3:0.5;
+    var att = ra.fwd*mix+ra.back*(1-mix);
+    var x = (att-rd.def-6)/26 + (a===0&&!M.neutral?0.06:0);
+    var pTry = 0.166*Math.exp(x)*mod[a].tryFor*mod[d].tryAg;
+    var pPen = 0.12*mod[d].penAg*(A.tac.style==='tight'?1.15:1)*clamp(1.6-rd.disc/110,0.7,1.3);
+    var pInj = 0.008*(M.sides[0].tac.tackle==='hard'?1.25:1)*(M.sides[1].tac.tackle==='hard'?1.25:1);
+    var an=club(A.club).name, dn=club(D.club).name, q=R();
+    if(q<pTry){
+      tryScored(G,M,a,R,false,pick(R,['%p finishes a sweeping move for %c.','%p crashes over from close range.','%p goes over in the corner after quick hands from %c.','%p breaks the line and runs it in.','%p dots down after sustained %c pressure.','%p is on the end of a clever kick through.']));
+    } else if(q<pTry+pPen){
+      var off=pickOn(G,M,d,R,function(p){ return 21-p.at.Di+p.hid.Drt; });
+      var yq=R(), carded=false;
+      if(off){ var op=off[0], drt=op.hid.Drt; bump(M,op,-0.4);
+        if(yq<0.007*mod[d].card*(0.5+drt/19)){ carded=true; D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2.5); say(M,m,'card',d,'RED CARD! '+op.n+' ('+dn+') is sent off for a dangerous tackle.'); }
+        else if(yq<0.007+0.115*mod[d].card*(0.45+drt/17)){ carded=true; D.yc++; M.pr[op.id].yc++;
+          if(M.pr[op.id].yc>=2){ D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2); say(M,m,'card',d,'Second yellow card! '+op.n+' ('+dn+') is sent off.'); }
+          else { bump(M,op,-1); D.bin.push({slot:off[1],until:m+10,pid:op.id}); say(M,m,'card',d,'Yellow card! '+op.n+' ('+dn+') goes to the sin bin for ten minutes.'); } }
+      }
+      var k=kicker(G,M,a), diff=A.score-D.score;
+      var pg = A.tac.pens==='goal'?0.85:A.tac.pens==='corner'?0.12:0.45;
+      if(m>=70 && diff<-3 && diff>=-8) pg=0.1; if(m>=70 && diff>=-3 && diff<=0) pg=0.95; if(carded) pg*=0.6;
+      if(k && R()<pg){
+        if(R() < clamp(0.50+0.021*k.at.Gk+(R()-0.5)*0.25,0.2,0.96)){ A.pens++; addScore(M,a,k.id,3); bump(M,k,0.3); say(M,m,'kick',a,'Penalty to '+an+(off?' ('+off[0].n+' penalised)':'')+'. '+k.n+' kicks the three points. '+score(M)); }
+        else { bump(M,k,-0.3); say(M,m,'info',a,'Penalty to '+an+', but '+k.n+' pushes the kick wide.'); }
+      } else {
+        var lo=A.tac.lineout, hk=onPitch(G,M,a,1);
+        if(R() < clamp(0.84+(lo==='safe'?0.06:lo==='long'?-0.08:0)+(ra.line-rd.line)/160,0.5,0.97)){
+          if(R() < 0.30*(lo==='safe'?0.85:lo==='long'?1.25:1)*Math.exp((ra.fwd-(rd.def+rd.scrum)/2-4)/26)) tryScored(G,M,a,R,true,'%c kick to the corner, the maul rumbles over and %p touches down.');
+          else { unit(G,M,d,FW,0.08); say(M,m,'info',a,an+' kick to the corner and drive the maul, but '+dn+' hold them up.'); }
+        } else { var st=pickOn(G,M,d,R,function(p,i){ return i===3||i===4?3:i>=5&&i<=7?1:0; }); if(st) bump(M,st[0],0.35); bump(M,hk,-0.3); say(M,m,'info',d,an+' go to the corner but '+(st?st[0].n+' steals the lineout for '+dn:dn+' steal the lineout')+'.'); }
+      }
+    } else if(q<pTry+pPen+0.0015*ra.kick/75){
+      var fh=onPitch(G,M,a,9)||kicker(G,M,a); if(fh){ A.dgs++; addScore(M,a,fh.id,3); bump(M,fh,0.5); say(M,m,'kick',a,'Drop goal! '+fh.n+' slots it for '+an+'. '+score(M)); }
+    } else if(q<pTry+pPen+pInj){
+      var hs=R()<0.5?0:1, h=pickOn(G,M,hs,R,function(p){ return p.hid.Inj; });
+      if(h){ var wk=1+Math.min(20,Math.floor(-Math.log(1-R())*3)); M.pr[h[0].id].inj=wk; say(M,m,'card',hs,'Injury: '+h[0].n+' ('+club(M.sides[hs].club).name+') cannot continue.');
+        var bi=bestBench(G,M,hs,h[1]); if(bi>=0) doSub(G,M,hs,h[1],bi,true); else M.sides[hs].xv[h[1]]=null; }
+    } else if(R()<0.6){
+      var pa=onPitch(G,M,a,Math.floor(R()*15)), pd=onPitch(G,M,d,Math.floor(R()*15)), L=[];
+      var ev=function(t,f){ L.push([t,f]); };
+      if(pa){ ev(pa.n+' makes a break for '+an+' but the cover defence gets across.',function(){ bump(M,pa,0.3); }); ev(pa.n+' knocks on with the line in sight.',function(){ bump(M,pa,-0.4); });
+        ev(pa.n+' carries hard and makes good ground for '+an+'.',function(){ bump(M,pa,0.2); }); ev(pa.n+' throws a loose pass and the '+an+' move breaks down.',function(){ bump(M,pa,-0.3); }); ev(pa.n+' puts up a high ball and '+an+' chase hard.',function(){ bump(M,pa,0.1); }); }
+      if(pd){ ev('Turnover! '+pd.n+' gets over the ball and wins it back for '+dn+'.',function(){ bump(M,pd,0.4); }); ev('Big tackle from '+pd.n+' stops the '+an+' attack.',function(){ bump(M,pd,0.3); });
+        ev(pd.n+' clears to touch for '+dn+'.',function(){ bump(M,pd,0.1); }); ev(pd.n+' misses a tackle but the '+dn+' cover scrambles back.',function(){ bump(M,pd,-0.3); }); }
+      if(ra.scrum>rd.scrum+3) ev(an+' win a scrum against the head.',function(){ unit(G,M,a,[0,1,2],0.2); unit(G,M,d,[0,1,2],-0.2); }); else ev('Scrum reset. The referee has a word with both front rows.',function(){});
+      if(ra.line>rd.line) ev(an+' take clean lineout ball and set the maul.',function(){ unit(G,M,a,[1,3,4],0.1); }); else ev(dn+' disrupt the '+an+' lineout.',function(){ unit(G,M,d,[3,4],0.2); bump(M,onPitch(G,M,a,1),-0.2); });
+      ev(an+' go through the phases in the '+dn+' 22.',function(){ unit(G,M,a,FW,0.03); });
+      var e=pick(R,L); e[1](); say(M,m,'info',a,e[0]);
+    }
+  }
+  if(m===40){ M.ht=[M.sides[0].score,M.sides[1].score]; say(M,m,'ht',-1,'Half-time: '+score(M)); }
+  var end = M.et?100:80;
+  if(m>=end){
+    var s0=M.sides[0].score, s1=M.sides[1].score;
+    if(M.ko && s0===s1 && !M.et){ M.et=true; say(M,m,'ht',-1,'Level after 80 minutes. Extra time will be played.'); return; }
+    if(M.ko && s0===s1){ M.pk = M.sides[0].tries!==M.sides[1].tries ? (M.sides[0].tries>M.sides[1].tries?0:1) : (R()<0.5?0:1); say(M,m,'info',-1,'Still level. '+club(M.sides[M.pk].club).name+' go through '+(M.sides[0].tries!==M.sides[1].tries?'on tries scored.':'after a place-kicking competition.')); }
+    M.done=true; say(M,m,'ft',-1,'Full-time: '+score(M)); rateMatch(G,M);
+  }
+}
+function rateMatch(G,M){
+  for(var si=0;si<2;si++){ var s=M.sides[si], marg=clamp(s.score-M.sides[1-si].score,-25,25);
+    Object.keys(M.pr).forEach(function(id){ var r=M.pr[id]; if(G.players[id].club!==s.club) return; r.r = r.mins ? Math.round(clamp(r.r+marg/25*0.5,1,10)*10)/10 : 0; }); }
+}
+function playOut(G,M){ var guard=0; while(!M.done && guard++<200) stepMinute(G,M); return M; }
+function winner(M){ var a=M.sides[0].score,b=M.sides[1].score; return a>b?0:b>a?1:(M.pk==null?-1:M.pk); }
+
+// ---------- season ----------
+function curFixtures(G){ return G.phase==='league'?G.fix[G.round]:G.phase==='sf'?G.po.sf:G.phase==='final'?[G.po.final]:[]; }
+function userFixture(G){ var f=curFixtures(G); for(var i=0;i<f.length;i++) if(!f[i].res && (f[i].h===G.user||f[i].a===G.user)) return f[i]; return null; }
+function matchFor(G,f){ return newMatch(G,f.h,f.a,{ko:G.phase!=='league',neutral:G.phase==='final',stage:G.phase}); }
+function record(G,f,M){
+  var s0=M.sides[0], s1=M.sides[1], w=winner(M);
+  f.res={hs:s0.score,as:s1.score,ht:s0.tries,at:s1.tries,pk:M.pk,w:w};
+  if(M.stage==='league'){
+    [[s0,s1,0],[s1,s0,1]].forEach(function(x){ var t=G.clubs[x[0].club].t, me=x[0].score, op=x[1].score; t.p++; t.pf+=me; t.pa+=op; t.tf+=x[0].tries;
+      if(me>op){ t.w++; t.pts+=4; } else if(me===op){ t.d++; t.pts+=2; } else { t.l++; if(op-me<=7){ t.lb++; t.pts++; } }
+      if(x[0].tries>=4){ t.tb++; t.pts++; } });
+  }
+  Object.keys(M.pr).forEach(function(id){ var p=G.players[id], r=M.pr[id]; if(!r.mins) return;
+    p.apps++; p.tries+=r.tr; p.pts+=r.pts; p.rs+=r.r; p.yc+=r.yc; p.rc+=r.rc; p.cond=Math.round(M.cond[id]); p.form.push(r.r); if(p.form.length>5) p.form.shift();
+    if(r.inj){ p.inj=r.inj; if(p.club===G.user) news(G,p.n+' injured','Out for about '+r.inj+' week'+(r.inj>1?'s':'')+'.'); }
+    var won = p.club===M.sides[w<0?0:w].club && w>=0, lost = w>=0 && !won;
+    p.morale = clamp((p.morale==null?60:p.morale)+(won?5:lost?-4:1)+(r.r-6.5)*2,5,100);
+    var ycNow=p.yc, ycBefore=ycNow-r.yc;
+    if(r.rc){ var ban=2+Math.floor((G.seed>>>3)%4); p.susp=ban+1; if(p.club===G.user) news(G,p.n+' suspended','Banned for '+ban+' matches after his red card.'); }
+    else if(r.yc && Math.floor(ycNow/3)>Math.floor(ycBefore/3)){ p.susp=2; if(p.club===G.user) news(G,p.n+' suspended','His yellow cards have added up: '+ycNow+' this season. He misses the next match.'); }
+  });
+  [s0,s1].forEach(function(sd){ var sq=squad(G,sd.club).sort(function(a,b){ return b.ca-a.ca; }).slice(0,22); sq.forEach(function(p){ if(!M.pr[p.id] && avail(p)) p.morale=clamp((p.morale==null?60:p.morale)-0.8,5,100); }); });
+  if(f.h===G.user && !M.neutral){ var c=club(f.h), t2=G.clubs[f.h], pos=standings(G).map(function(x){ return x.id; }).indexOf(f.h);
+    var att=Math.round(c.cap*clamp(0.68+(9-pos)*0.03+(M.stage!=='league'?0.15:0),0.5,1)), gate=att*34; t2.bal+=gate; G.ledger.gate+=gate; f.res.att=att; }
+}
+function standings(G){ return CLUBS.map(function(c){ var t=G.clubs[c.id].t; return {id:c.id,t:t,diff:t.pf-t.pa}; }).sort(function(a,b){ return b.t.pts-a.t.pts || b.t.w-a.t.w || b.diff-a.diff || b.t.pf-a.t.pf || (a.id<b.id?-1:1); }); }
+function simOthers(G){ curFixtures(G).forEach(function(f){ if(!f.res) record(G,f,playOut(G,matchFor(G,f))); }); }
+
+function transferTo(G,p,to,fee,wage){
+  var from=p.club; p.club=to; p.listed=false; if(wage) p.wage=wage; p.contract=G.year+3; p.faY=0;
+  [from,to].forEach(function(cid){ var c=G.clubs[cid]; if(!c) return; if(c.sel) c.sel=c.sel.map(function(id){ return id===p.id?null:id; }); if(c.tac.kicker===p.id) c.tac.kicker=null; });
+  if(from===G.user){ G.clubs[from].bal+=fee; G.ledger.sales+=fee; }
+  if(to===G.user){ G.clubs[to].bal-=fee; G.ledger.buys+=fee; }
+  G.offers=G.offers.filter(function(o){ return o.pid!==p.id||o.status!=='pending'; }); G.bids=G.bids.filter(function(b){ return b.pid!==p.id; });
+}
+function askPrice(G,p){ if(p.club==='FA') return 0; if(p.club==='LEG') return value(p)*1.25; if(abroad(p.club)) return value(p)*1.35; var sel=pickXV(G,p.club), i=sel.indexOf(p.id); var f = i>=0&&i<15?1.6:i>=15?1.25:1.05; if(p.listed) f=0.7; return value(p)*f; }
+function windowOpen(G){ return G.phase==='league' && G.round<DEADLINE; }
+function makeOffer(G,pid,fee,wage){
+  var p=G.players[pid]; if(!windowOpen(G)) return 'The transfer deadline has passed.';
+  if(p.club===G.user) return 'He already plays for you.'; if(p.club==='RET') return 'He has retired.';
+  if(G.offers.some(function(o){ return o.pid===pid&&o.status==='pending'; })) return 'You already have an offer in for him.';
+  if(fee>G.clubs[G.user].bal) return 'You cannot afford that fee.';
+  G.offers.unshift({pid:pid,fee:fee,wage:wage,status:'pending',msg:'Awaiting a reply.'}); return '';
+}
+function processOffers(G,R){
+  G.offers.forEach(function(o){ if(o.status!=='pending') return; var p=G.players[o.pid], cn=club(p.club).name, u=G.clubs[G.user];
+    if(p.club==='LEG') cn='His agent'; var fail=function(m){ o.status='rejected'; o.msg=m; news(G,'Offer for '+p.n+' turned down',m); };
+    if(!windowOpen(G)) return fail('The transfer deadline has passed.');
+    var ask=askPrice(G,p)*(0.95+R()*0.15);
+    if(p.club==='RET') return fail('He has retired.');
+    if(o.fee<ask*0.8) return fail(cn+(p.club==='LEG'?' called the offer derisory.':' called the bid derisory.'));
+    if(o.fee<ask) return fail(cn+(p.club==='LEG'?' wants around ':' want around ')+money(Math.ceil(ask/10000)*10000)+'.');
+    var wmin=p.club==='FA'?baseWage(p):p.wage*(abroad(p.club)?1.15:1.05); if(o.wage<wmin) return fail((p.club==='FA'?'':cn+' accepted the fee, but ')+p.n+' wants at least '+money(Math.ceil(wmin/1000)*1000)+' a year.');
+    if(o.fee>u.bal) return fail('The deal collapsed: you can no longer afford the fee.');
+    if(wageBill(G,G.user)+o.wage>CAP) return fail('The deal collapsed: his wages would take you over the salary cap.');
+    if(squad(G,G.user).length>=MAXSQUAD) return fail('The deal collapsed: your squad is full ('+MAXSQUAD+').');
+    var from=p.club; transferTo(G,p,G.user,o.fee,o.wage); o.status='accepted'; o.msg='Signed.'; if(G.clubs[from]) ensureDepth(G,R,from,false);
+    news(G,p.n+' signs',(from==='FA'?'He joins as a free agent':from==='LEG'?'The '+p.leg+' great joins for '+money(o.fee):'He joins from '+cn+' for '+money(o.fee))+' on '+money(o.wage)+' a year.');
+  });
+  if(G.offers.length>25) G.offers.length=25;
+}
+function makeBids(G,R){
+  G.bids=G.bids.filter(function(b){ return --b.ttl>0; });
+  if(!windowOpen(G)) return;
+  var mine=squad(G,G.user), others=CLUBS.filter(function(c){ return c.id!==G.user; }).concat(FOREIGN);
+  var bid=function(p,mult){ if(G.bids.some(function(b){ return b.pid===p.id; })) return;
+    var c=pick(R,others); if(!abroad(c.id) && (wageBill(G,c.id)+p.wage>CAP || squad(G,c.id).length>=MAXSQUAD-2)) return;
+    var fee=Math.round(value(p)*mult/5000)*5000; G.bids.push({id:G.bidSeq++,pid:p.id,from:c.id,fee:fee,ttl:3});
+    news(G,c.name+' bid for '+p.n,'They have offered '+money(fee)+'. Answer it on the Transfers screen.'); };
+  mine.forEach(function(p){ if(p.listed && R()<0.4) bid(p,0.75+R()*0.4); });
+  if(R()<0.07){ var stars=mine.filter(function(p){ return p.ca>=78&&!p.listed; }); if(stars.length) bid(pick(R,stars),1.2+R()*0.4); }
+}
+function acceptBid(G,id){ var b=G.bids.filter(function(x){ return x.id===id; })[0]; if(!b) return; var p=G.players[b.pid]; transferTo(G,p,b.from,b.fee,0); news(G,p.n+' sold','He joins '+club(b.from).name+' for '+money(b.fee)+'.'); ensureDepth(G,rng(G),G.user,false); }
+function rejectBid(G,id){ G.bids=G.bids.filter(function(x){ return x.id!==id; }); }
+
+function weekTick(G){
+  var R=rng(G), u=G.clubs[G.user];
+  G.players.forEach(function(p){ p.cond=Math.min(100,Math.round(p.cond+28+p.at.St*0.6)); if(p.inj){ p.inj--; if(!p.inj && p.club===G.user) news(G,p.n+' fit again','He is available for selection.'); } else if(R()<0.004*p.hid.Inj/9){ p.inj=1+Math.floor(R()*4); if(p.club===G.user) news(G,p.n+' hurt in training','Out for about '+p.inj+' week'+(p.inj>1?'s':'')+'.'); }
+    if(p.susp) p.susp--; if(p.intl) p.intl--; p.morale += (60-p.morale)*0.07; });
+  if(G.phase==='league' && G.round===9){ var gone=[]; G.players.forEach(function(p){ if(G.clubs[p.club] && p.ca>=86 && !p.acad){ p.intl=3; if(p.club===G.user) gone.push(p.n); } });
+    news(G,'International window','The best players in the league are away with their countries for the next three rounds.'+(gone.length?' You lose '+gone.join(', ')+'.':' None of your players are called up.')); }
+  var w=Math.round(wageBill(G,G.user)/20), costs=200000, central=255000;
+  u.bal+=central-w-costs; G.ledger.central+=central; G.ledger.wages+=w; G.ledger.costs+=costs;
+  processOffers(G,R); makeBids(G,R);
+  CLUBS.forEach(function(c){ ensureDepth(G,R,c.id,true); });
+}
+// Call after every fixture in the current stage has a result.
+function advance(G){
+  if(G.phase==='league'){
+    G.round++;
+    if(G.round>=ROUNDS){ var st=standings(G); G.phase='sf'; G.po={sf:[{h:st[0].id,a:st[3].id,res:null},{h:st[1].id,a:st[2].id,res:null}],final:null};
+      news(G,'The play-offs are set',club(st[0].id).name+' v '+club(st[3].id).name+' and '+club(st[1].id).name+' v '+club(st[2].id).name+'.'); }
+  } else if(G.phase==='sf'){
+    var w=G.po.sf.map(function(f){ return f.res.w===0?f.h:f.a; }); G.po.final={h:w[0],a:w[1],res:null}; G.phase='final';
+    news(G,'The final',club(w[0]).name+' will meet '+club(w[1]).name+' at Twickenham.');
+  } else if(G.phase==='final'){
+    var f=G.po.final; G.champion=f.res.w===0?f.h:f.a; G.phase='done'; seasonEnd(G); return;
+  }
+  weekTick(G);
+}
+function seasonEnd(G){
+  var st=standings(G), pos=st.map(function(x){ return x.id; }).indexOf(G.user)+1, u=G.clubs[G.user];
+  var inFinal=G.po.final.h===G.user||G.po.final.a===G.user, champ=G.champion===G.user;
+  var met = u.rank<=2?inFinal:u.rank<=4?pos<=4:u.rank<=7?pos<=6:pos<=9;
+  var prize = champ?600000:inFinal?350000:pos<=4?200000:(11-pos)*15000; u.bal+=prize; G.ledger.prize+=prize;
+  G.verdict={pos:pos,champ:champ,inFinal:inFinal,met:met,
+    text: champ?'Champions of England. The board is delighted.':met?'The board is satisfied: you met its target ('+u.exp.toLowerCase()+').':'The board is disappointed: the target was to '+u.exp.toLowerCase()+'.'};
+  var tgt = u.rank<=2?2:u.rank<=4?4:u.rank<=7?6:9;
+  G.conf = clamp((G.conf==null?60:G.conf)+(champ?30:met?15:pos-tgt>3?-30:-18),0,100); G.sacked = G.conf<=15;
+  if(G.sacked) G.verdict.text += ' The board has lost patience and dismissed you.';
+  news(G,club(G.champion).name+' are champions','The season is over. '+G.verdict.text);
+}
+function demand(G,p){ var w=Math.max(p.wage, baseWage(p)*(p.age<=24?1.05:1)), m=p.morale<35?1.2:p.morale<50?1.1:1; return Math.ceil(w*m/1000)*1000; }
+function renew(G,pid,wage,years){
+  var p=G.players[pid]; if(p.club!==G.user) return 'He is not your player.';
+  years=clamp(years|0,1,4); if(p.age+years>38) return p.n+' will not commit that far ahead at his age.';
+  var d=demand(G,p); if(wage<d) return p.n+' wants at least '+money(d)+' a year.';
+  if(wageBill(G,G.user)-p.wage+wage>CAP) return 'That would take you over the salary cap.';
+  p.wage=wage; p.contract=G.year+1+years; p.morale=clamp(p.morale+8,5,100); return '';
+}
+function expiring(G){ return squad(G,G.user).filter(function(p){ return p.contract<=G.year+1; }).sort(function(a,b){ return b.ca-a.ca; }); }
+function develop(p,R){
+  var old=p.ca, a=p.age, d;
+  if(a<=23) d=Math.round((p.pa-p.ca)*(0.25+R()*0.35)+(p.apps>=8?1:0)); else if(a<=27) d=Math.round((p.pa-p.ca)*0.3+(R()-0.4)*2); else if(a<=30) d=Math.round((R()-0.6)*2); else if(a<=33) d=-Math.round(R()*2.4+0.3); else d=-Math.round(1+R()*3.5);
+  p.ca=clamp(p.ca+d,40,97); if(p.ca>p.pa) p.pa=p.ca; p.age++;
+  var w=PROF[p.pos], dd=p.ca-old; if(dd) ATTR.forEach(function(k,i){ p.at[k]=clamp(Math.round(p.at[k]+dd/5*(0.42+0.62*w[i])+(R()-0.5)*0.6),1,20); });
+  if(a>=30){ if(R()<0.6) p.at.Pc=Math.max(1,p.at.Pc-1); if(R()<0.4) p.at.St=Math.max(1,p.at.St-1); }
+  if(p.age>21) p.acad=false;
+}
+function newSeason(G){
+  var R=rng(G), endY=G.year+1, mine=[], moves=[], uc=G.user;
+  G.hist.push({y:G.year,champ:G.champion,pos:G.verdict.pos,met:G.verdict.met});
+  var str={}; CLUBS.forEach(function(c){ str[c.id]=xvStrength(G,c.id); });
+  var release=function(p){ var from=p.club; p.club='FA'; p.listed=false; p.faY=0; if(G.clubs[from]&&G.clubs[from].sel) G.clubs[from].sel=G.clubs[from].sel.map(function(id){ return id===p.id?null:id; }); };
+  G.players.forEach(function(p){ if(p.club==='RET') return; if(p.club==='LEG'){ p.contract=endY+3; return; }
+    if(p.club==='FA'){ p.faY=(p.faY||0)+1; }
+    else if(p.contract<=endY){
+      if(p.club===uc){ mine.push(p.n+' left at the end of his contract'); release(p); }
+      else if(G.clubs[p.club]){ if(p.age<=24 || R()<(p.ca>=str[p.club]-6?0.95:0.6)) p.contract=endY+1+Math.floor(R()*3); else { if(p.ca>=80) moves.push(p.n+' released by '+club(p.club).name); release(p); } }
+      else p.contract=endY+2;
+    }
+    p.car.apps+=p.apps; p.car.tries+=p.tries; p.car.pts+=p.pts;
+    develop(p,R);
+    if(p.club!=='RET' && (p.age>=39 || (p.age>=35 && R()<(p.age-34)*0.18*(p.ca>=80?0.6:1)+(p.ca<68?0.3:0)) || (p.club==='FA' && p.faY>=2))){ if(p.club===uc) mine.push(p.n+' retired'); else if(p.ca>=80) moves.push(p.n+' retired'); release(p); p.club='RET'; }
+    p.apps=0; p.tries=0; p.pts=0; p.rs=0; p.yc=0; p.rc=0; p.form=[]; p.cond=100; p.inj=Math.max(0,p.inj-14); p.susp=0; p.intl=0; p.morale=60+(p.morale-60)*0.5; p.listed=false;
+    if(p.club==='FA') p.wage=baseWage(p);
+    if(G.clubs[p.club] && p.club!==uc) p.wage=Math.round((p.wage*2+baseWage(p))/3/1000)*1000;
+  });
+  G.year++; YEAR=G.year;
+  // academy intake and a regenerated prospect at each overseas club
+  CLUBS.forEach(function(c){ for(var i=0;i<3;i++){ var y=genYouth(G,R,c.id,POS[Math.floor(R()*POS.length)]); if(c.id===uc) mine.push(y.n+' ('+y.pos+') promoted from the academy'); } });
+  FOREIGN.forEach(function(c){ var y=genYouth(G,R,c.id,POS[Math.floor(R()*POS.length)]); y.acad=false; y.age=20+Math.floor(R()*3); y.ca=72+Math.floor(R()*10); y.pa=Math.min(96,y.ca+Math.floor(R()*12)); y.wage=baseWage(y);
+    var w=PROF[y.pos]; ATTR.forEach(function(k,i){ y.at[k]=clamp(Math.round(y.ca/5*(0.42+0.62*w[i])+(R()-0.5)*3),1,20); }); });
+  // other clubs recruit: free agents first, then the odd signing from abroad, and the odd player leaves for abroad
+  var ai=CLUBS.filter(function(c){ return c.id!==uc; }).sort(function(){ return R()-0.5; });
+  var sign=function(c,p,note){ var from=p.club; p.club=c.id; p.contract=G.year+1+1+Math.floor(R()*3); p.wage=Math.max(p.wage,baseWage(p)); p.faY=0; if(p.ca>=80) moves.push(p.n+' to '+c.name+(note||'')); };
+  ai.forEach(function(c){ var xv=xvStrength(G,c.id), room=function(p){ return wageBill(G,c.id)+Math.max(p.wage,baseWage(p))<=CAP*0.97 && squad(G,c.id).length<MAXSQUAD-4; };
+    var fa=G.players.filter(function(p){ return p.club==='FA' && p.ca>=62; }).sort(function(a,b){ return b.ca-a.ca; });
+    POS.forEach(function(pos){ var have=squad(G,c.id).filter(function(p){ return p.pos===pos; }).length; for(var i=0;i<fa.length && have<MINDEPTH[pos]+1;i++) if(fa[i].club==='FA' && fa[i].pos===pos && room(fa[i])){ sign(c,fa[i],' (free agent)'); have++; } });
+    for(var i=0;i<fa.length;i++) if(fa[i].club==='FA' && fa[i].ca>=xv-4 && room(fa[i])){ sign(c,fa[i],' (free agent)'); break; }
+    if(R()<0.4){ var pool=G.players.filter(function(p){ return abroad(p.club) && p.ca>=xv-3 && p.ca<=xv+6 && p.age<=31 && room(p); }); if(pool.length){ var t=pick(R,pool); sign(c,t,' from '+club(t.club).name); } }
+    if(R()<0.3){ var out=squad(G,c.id).filter(function(p){ return p.age>=26 && p.ca>=74 && p.ca<=xv+2; }); if(out.length){ var o=pick(R,out), dest=pick(R,FOREIGN); if(G.clubs[c.id].sel) G.clubs[c.id].sel=null; if(o.ca>=80) moves.push(o.n+' leaves '+c.name+' for '+dest.name); o.club=dest.id; o.contract=G.year+3; } }
+  });
+  ai.forEach(function(c){ var sq=squad(G,c.id).filter(function(p){ return p.age>23; }).sort(function(a,b){ return a.ca-b.ca; }), n=squad(G,c.id).length; for(var i=0;i<sq.length && n>42;i++,n--){ sq[i].wage=baseWage(sq[i]); release(sq[i]); } });
+  CLUBS.forEach(function(c){ ensureDepth(G,R,c.id,false); var bill=wageBill(G,c.id); if(c.id!==uc && bill>CAP*0.97){ var f=CAP*0.97/bill; squad(G,c.id).forEach(function(p){ p.wage=Math.round(p.wage*f/1000)*1000; }); }
+    G.clubs[c.id].t={p:0,w:0,d:0,l:0,pf:0,pa:0,tf:0,tb:0,lb:0,pts:0}; if(c.id!==uc) G.clubs[c.id].sel=null; });
+  var u=G.clubs[uc], bonus=(11-G.verdict.pos)*60000; u.bal+=bonus;
+  G.round=0; G.phase='league'; G.po=null; G.champion=null; G.last=null; G.offers=[]; G.bids=[]; G.ledger={gate:0,central:bonus,wages:0,costs:0,sales:0,buys:0,prize:0};
+  setExpectations(G,R,false); listFringe(G,R); makeFixtures(G,R);
+  if(u.sel) u.sel=u.sel.map(function(id){ return id!=null && G.players[id].club===uc ? id : null; });
+  G.verdict=null;
+  if(moves.length) news(G,'Summer moves',moves.slice(0,14).join('. ')+'.');
+  news(G,'Season '+G.year+'/'+String(G.year+1).slice(2)+' begins',(mine.length?mine.join('. ')+'. ':'')+'The board expects you to: '+u.exp.toLowerCase()+'. Season-ticket and sponsorship income: '+money(bonus)+'.');
+}
+function leaders(G,key,n){ var a=G.players.filter(function(p){ return p.apps>0; });
+  if(key==='cards') return a.filter(function(p){ return p.yc+p.rc>0; }).sort(function(x,y){ return (y.yc+y.rc*3)-(x.yc+x.rc*3); }).slice(0,n);
+  if(key==='avg') a=a.filter(function(p){ return p.apps>=Math.max(1,Math.floor(G.round/2)); }).sort(function(x,y){ return y.rs/y.apps-x.rs/x.apps; }); else a.sort(function(x,y){ return y[key]-x[key]; });
+  return a.slice(0,n); }
+
+return {POS:POS,POSN:POSN,SLOTS:SLOTS,ATTR:ATTR,ATTRN:ATTRN,CAP:CAP,ROUNDS:ROUNDS,DEADLINE:DEADLINE,MAXSQUAD:MAXSQUAD,rng:rng,club:club,squad:squad,wageBill:wageBill,value:value,fam:fam,effSlot:effSlot,avail:avail,formAvg:formAvg,
+  pickXV:pickXV,selProblems:selProblems,xvStrength:xvStrength,newGame:newGame,money:money,roundLabel:roundLabel,dateLabel:dateLabel,newMatch:newMatch,stepMinute:stepMinute,playOut:playOut,doSub:doSub,onPitch:onPitch,winner:winner,
+  curFixtures:curFixtures,userFixture:userFixture,matchFor:matchFor,record:record,standings:standings,simOthers:simOthers,advance:advance,makeOffer:makeOffer,askPrice:askPrice,windowOpen:windowOpen,acceptBid:acceptBid,rejectBid:rejectBid,leaders:leaders,kicker:kicker,migrate:migrate,abroad:abroad,demand:demand,renew:renew,expiring:expiring,newSeason:newSeason};
+})();
+if (typeof module !== 'undefined') module.exports = E;
+(function () {
+'use strict';
+var KEY = 'rugby-manager-2627', G = null, MT = null;
+var UI = {scr:'news', modal:null, msg:'', tf:{pos:'',club:'',lg:'',name:'',listed:false,sort:'ca'}, clubView:null, fixRound:null, memory:false, sq:{k:'pos', d:1, pos:'', view:'main'}};
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+var money = E.money, club = E.club;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(G)); UI.memory = false; } catch (e) { UI.memory = true; } }
+function load() { try { var s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function wipe() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+function b64(bytes) { var s = ''; for (var i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192)); return btoa(s); }
+function encodeSave() { var raw = new TextEncoder().encode(JSON.stringify(G)); if (!window.CompressionStream) return Promise.resolve('RM0:' + b64(raw));
+  return new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then(function (b) { return 'RM1:' + b64(new Uint8Array(b)); }); }
+function decodeSave(code) { code = code.replace(/\s+/g, ''); var head = code.slice(0, 4); if (head !== 'RM0:' && head !== 'RM1:') return Promise.reject(new Error('bad'));
+  var bin = atob(code.slice(4)), bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  var text = head === 'RM0:' ? Promise.resolve(new TextDecoder().decode(bytes)) : new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  return text.then(function (t) { var g = JSON.parse(t); if (!g || !g.players || !g.clubs || !g.fix || !club(g.user)) throw new Error('bad'); return g; }); }
+function loadPanel() { return panel('Load a save code', '<p class="dim">Paste a code made on another phone or computer to carry on from there.</p><textarea id="loadcode" rows="3" spellcheck="false" placeholder="RM1:..."></textarea><p class="row">' + btn('Load save code', 'loadsave') + '</p>' + (UI.loadErr ? '<p class="bad">' + esc(UI.loadErr) + '</p>' : '')); }
+// ---------- shared bits ----------
+function condCls(c) { return c >= 85 ? 'good' : c >= 70 ? 'warn' : 'bad'; }
+function flags(p) { return (p.inj ? ' <b class="tag bad" title="Injured">INJ ' + p.inj + 'w</b>' : '') + (p.susp ? ' <b class="tag bad" title="Suspended">SUS ' + p.susp + '</b>' : '') + (p.intl ? ' <b class="tag warn" title="Away on international duty">INT ' + p.intl + '</b>' : '') + (p.listed ? ' <b class="tag warn" title="Transfer listed">LIST</b>' : '') + (p.acad ? ' <b class="tag dim" title="Academy player (fictional)">ACA</b>' : ''); }
+function pl(p) { return '<a href="#" data-a="player" data-id="' + p.id + '">' + esc(p.n) + '</a>' + flags(p); }
+function morL(p) { var m = p.morale == null ? 60 : p.morale; return m >= 80 ? ['Superb', 'good'] : m >= 66 ? ['Good', 'good'] : m >= 50 ? ['Okay', ''] : m >= 35 ? ['Low', 'warn'] : ['Poor', 'bad']; }
+function report(p) { var h = p.hid, o = []; if (!h) return '';
+  if (h.Con >= 15) o.push('very consistent'); else if (h.Con <= 7) o.push('inconsistent from week to week');
+  if (h.Big >= 15) o.push('rises to big matches'); else if (h.Big <= 6) o.push('can go missing in big matches');
+  if (h.Inj >= 13) o.push('injury prone'); if (h.Drt >= 14) o.push('short fuse, a card risk'); else if (h.Drt <= 5) o.push('very disciplined');
+  if (h.Ver >= 14) o.push('copes well out of position');
+  if (p.age <= 23 && p.pa - p.ca >= 10) o.push('could become a star'); else if (p.age <= 24 && p.pa - p.ca >= 5) o.push('has room to improve');
+  return o.length ? o.join(', ') : 'nothing out of the ordinary'; }
+function ratCls(r) { return r >= 7.5 ? 'good' : r >= 6 ? '' : r >= 5 ? 'warn' : 'bad'; }
+function avgR(p) { return p.apps ? (p.rs / p.apps).toFixed(2) : '-'; }
+function formS(p) { return p.form.length ? E.formAvg(p).toFixed(1) : '-'; }
+function table(head, rows, cls) { return '<div class="scroll"><table class="' + (cls || '') + '"><thead><tr>' + head.map(function (h) { return '<th' + (h[1] ? ' class="' + h[1] + '"' : '') + '>' + h[0] + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>'; }
+function sortVal(p, k, own) {
+  switch (k) { case 'n': return p.n.toLowerCase(); case 'pos': return E.POS.indexOf(p.pos) * 1000 - p.ca; case 'age': return p.age; case 'ca': return p.ca; case 'cond': return p.cond; case 'form': return p.form.length ? E.formAvg(p) : -1; case 'mor': return p.morale == null ? 60 : p.morale; case 'ctr': return p.contract;
+    case 'apps': return p.apps; case 'tries': return p.tries; case 'pts': return p.pts; case 'avr': return p.apps ? p.rs / p.apps : -1; case 'money': return own ? p.wage : E.value(p); default: return p.at[k] || 0; }
+}
+function squadTable(list, own) {
+  var q = UI.sq, fw = ['LP', 'HK', 'TP', 'LK', 'BR'];
+  list = list.filter(function (p) { return !q.pos || (q.pos === 'F' ? fw.indexOf(p.pos) >= 0 : q.pos === 'B' ? fw.indexOf(p.pos) < 0 : p.pos === q.pos); });
+  list.sort(function (a, b) { var x = sortVal(a, q.k, own), y = sortVal(b, q.k, own); return (x < y ? -1 : x > y ? 1 : 0) * q.d || b.ca - a.ca; });
+  var H = function (label, k, cls, title) { return ['<button type="button" class="th' + (q.k === k ? ' on' : '') + '" data-a="sort" data-id="' + k + '"' + (title ? ' title="' + title + '"' : '') + '>' + label + (q.k === k ? (q.d > 0 ? ' &#9650;' : ' &#9660;') : '') + '</button>', cls]; };
+  var bar = '<div class="filters">' + sel('sq_pos', [['', 'All positions'], ['F', 'Forwards'], ['B', 'Backs']].concat(E.POS.map(function (k) { return [k, E.POSN[k]]; })), q.pos, 'sq') + sel('sq_view', [['main', 'Overview'], ['attr', 'Attributes']], q.view, 'sq') + '<span class="dim small">Tap a column heading to sort. Tap again to reverse.</span></div>';
+  if (q.view === 'attr') return bar + table([H('Player', 'n'), H('Pos', 'pos'), H('Ovr', 'ca', 'n')].concat(E.ATTR.map(function (k) { return H(k, k, 'n', E.ATTRN[k]); })),
+    list.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="n hi">' + p.ca + '</td>' + E.ATTR.map(function (k) { var v = p.at[k]; return '<td class="n ' + (v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + v + '</td>'; }).join('') + '</tr>'; })) +
+    '<p class="dim small">' + E.ATTR.map(function (k) { return k + ' ' + E.ATTRN[k].toLowerCase(); }).join(' · ') + '. All out of 20.</p>';
+  return bar + table([H('Player', 'n'), H('Pos', 'pos'), H('Age', 'age', 'n'), H('Ovr', 'ca', 'n'), H('Con', 'cond', 'n'), H('Frm', 'form', 'n'), H('Morale', 'mor'), H('App', 'apps', 'n'), H('Tr', 'tries', 'n'), H('Pts', 'pts', 'n'), H('AvR', 'avr', 'n'), H('Ctr', 'ctr', 'n', 'Contract runs to June of this year'), H(own ? 'Wage' : 'Value', 'money', 'n')],
+    list.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="n">' + p.age + '</td><td class="n hi">' + p.ca + '</td><td class="n ' + condCls(p.cond) + '">' + p.cond + '</td><td class="n">' + formS(p) + '</td><td class="' + morL(p)[1] + '">' + morL(p)[0] + '</td><td class="n">' + p.apps + '</td><td class="n">' + p.tries + '</td><td class="n">' + p.pts + '</td><td class="n">' + avgR(p) + '</td><td class="n ' + (p.contract <= G.year + 1 ? 'warn' : '') + '">' + p.contract + '</td><td class="n">' + money(own ? p.wage : E.value(p)) + '</td></tr>'; }));
+}
+function leagueTable(mark) {
+  return table([['#', 'n'], ['Club'], ['P', 'n'], ['W', 'n'], ['D', 'n'], ['L', 'n'], ['PF', 'n'], ['PA', 'n'], ['+/-', 'n'], ['TB', 'n'], ['LB', 'n'], ['Pts', 'n']],
+    E.standings(G).map(function (x, i) { var t = x.t; return '<tr class="' + (x.id === G.user ? 'me ' : '') + (mark && i === 3 ? 'cut' : '') + '"><td class="n">' + (i + 1) + '</td><td class="nm"><a href="#" data-a="club" data-id="' + x.id + '">' + club(x.id).name + '</a></td><td class="n">' + t.p + '</td><td class="n">' + t.w + '</td><td class="n">' + t.d + '</td><td class="n">' + t.l + '</td><td class="n">' + t.pf + '</td><td class="n">' + t.pa + '</td><td class="n">' + (x.diff > 0 ? '+' : '') + x.diff + '</td><td class="n">' + t.tb + '</td><td class="n">' + t.lb + '</td><td class="n hi">' + t.pts + '</td></tr>'; }));
+}
+function resLine(f) { var r = f.res, u = f.h === G.user || f.a === G.user; return '<tr class="' + (u ? 'me' : '') + '"><td class="r">' + club(f.h).name + '</td><td class="sc">' + (r ? r.hs + ' - ' + r.as : 'v') + '</td><td>' + club(f.a).name + (r && r.pk != null ? ' <span class="dim">(' + club(r.pk === 0 ? f.h : f.a).name + ' go through)</span>' : '') + '</td></tr>'; }
+function resTable(fx) { return '<div class="scroll"><table class="res"><tbody>' + fx.map(resLine).join('') + '</tbody></table></div>'; }
+function panel(title, body, extra) { return '<section class="panel"><h2>' + title + (extra ? '<span class="h2x">' + extra + '</span>' : '') + '</h2>' + body + '</section>'; }
+function btn(label, act, attrs, cls) { return '<button type="button" class="btn ' + (cls || '') + '" data-a="' + act + '" ' + (attrs || '') + '>' + label + '</button>'; }
+function sel(id, opts, cur, act) { return '<select id="' + id + '" data-c="' + act + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'; }
+
+// ---------- start ----------
+function startScreen() {
+  var saved = load();
+  var rows = CLUBS.map(function (c) {
+    var all = []; E.POS.forEach(function (k) { (c.squad[k] || []).forEach(function (s) { all.push(+s.split('|')[1]); }); }); all.sort(function (a, b) { return b - a; });
+    var top = all.slice(0, 15).reduce(function (a, b) { return a + b; }, 0) / 15;
+    return '<button type="button" class="clubpick" data-a="new" data-id="' + c.id + '" style="--c1:' + c.c1 + ';--c2:' + c.c2 + '"><span class="sw"></span><span class="cn">' + c.name + '</span><span class="cg">' + c.ground + ' · ' + c.cap.toLocaleString('en-GB') + '</span><span class="cs">Squad ' + top.toFixed(0) + '</span></button>';
+  }).join('');
+  return '<div class="start"><header class="title"><p class="eyebrow">English top flight · season 2026/27</p><h1>Rugby Manager 26/27</h1><p class="sub">Pick your XV, set the tactics, work the transfer market and take your club to Twickenham.</p></header>' +
+    (saved ? '<section class="panel"><h2>Saved game</h2><p>' + esc(saved.mgr) + ' at ' + club(saved.user).name + ', ' + E.roundLabel(saved) + '.</p><p>' + btn('Continue saved game', 'resume', '', 'go') + '</p></section>' : '') +
+    '<section class="panel"><h2>New game</h2><p><label for="mgr">Manager name</label> <input id="mgr" type="text" maxlength="24" value="' + (saved ? esc(saved.mgr) : 'J. Howell') + '"></p><p class="dim">Choose a club to start.' + (saved ? ' This replaces the saved game.' : '') + '</p><div class="clubs">' + rows + '</div></section>' +
+    loadPanel() + '<p class="dim small">An unofficial, fan-made game. Squads are the published 2026/27 lists; player ratings, ages and all money figures are estimates made for the game.</p></div>';
+}
+
+// ---------- frame ----------
+var NAV = [['news', 'News'], ['squad', 'Squad'], ['select', 'Team'], ['tactics', 'Tactics'], ['fixtures', 'Fixtures'], ['table', 'Table'], ['stats', 'Stats'], ['transfers', 'Transfers'], ['finance', 'Finances'], ['clubs', 'Clubs'], ['options', 'Options']];
+function frame(body, inMatch) {
+  var c = club(G.user), u = G.clubs[G.user], f = E.userFixture(G);
+  var next = G.phase === 'done' ? 'Season review' : f ? (f.h === G.user ? 'v ' + club(f.a).name + ' (H)' : 'v ' + club(f.h).name + (G.phase === 'final' ? ' (N)' : ' (A)')) : 'No fixture';
+  return '<div class="shell' + (inMatch ? ' solo' : '') + '" style="--c1:' + c.c1 + ';--c2:' + c.c2 + '"><header class="top"><div class="crest"></div><div class="who"><strong>' + c.name + '</strong><span>' + esc(G.mgr) + ' · ' + E.dateLabel(G) + ' · ' + E.roundLabel(G) + '</span></div><div class="bank"><span>Bank</span><strong>' + money(u.bal) + '</strong></div>' +
+    (inMatch ? '' : '<button type="button" class="btn go cont" data-a="continue">Continue<small>' + next + '</small></button>') + '</header>' +
+    (inMatch ? '' : '<nav class="nav">' + NAV.map(function (n) { var badge = n[0] === 'transfers' && G.bids.length ? ' <i>' + G.bids.length + '</i>' : ''; return '<button type="button" data-a="go" data-id="' + n[0] + '" class="' + (UI.scr === n[0] ? 'on' : '') + '">' + n[1] + badge + '</button>'; }).join('') + '</nav>') +
+    '<main class="main">' + (UI.msg ? '<p class="msg" role="status">' + esc(UI.msg) + '</p>' : '') + body + '</main></div>';
+}
+
+// ---------- screens ----------
+var S = {};
+S.news = function () {
+  var f = E.userFixture(G), st = E.standings(G), pos = st.map(function (x) { return x.id; }).indexOf(G.user) + 1;
+  var sum = '<div class="tiles"><div><span>League position</span><strong>' + pos + (pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th') + '</strong></div><div><span>Board target</span><strong class="sm">' + G.clubs[G.user].exp + '</strong><span class="' + (G.conf < 35 ? 'bad' : '') + '">Confidence: ' + (G.conf >= 75 ? 'very high' : G.conf >= 50 ? 'steady' : G.conf >= 35 ? 'shaky' : 'your job is at risk') + '</span></div><div><span>Next match</span><strong class="sm">' + (f ? club(f.h).name + ' v ' + club(f.a).name : G.phase === 'done' ? 'Season over' : 'Not involved') + '</strong></div></div>';
+  return sum + panel('News', G.news.length ? '<ul class="news">' + G.news.slice(0, 40).map(function (n) { return '<li><span class="when">' + n.r + '</span><strong>' + esc(n.t) + '</strong><span>' + esc(n.b) + '</span></li>'; }).join('') + '</ul>' : '<p class="dim">Nothing to report.</p>');
+};
+S.squad = function () { var sq = E.squad(G, G.user); return panel('First-team squad', squadTable(sq, true), sq.length + ' players'); };
+S.select = function () {
+  var c = G.clubs[G.user], s = c.sel || [], probs = E.selProblems(G, G.user, c.sel);
+  var rows = E.SLOTS.map(function (slot, i) { var p = s[i] != null ? G.players[s[i]] : null;
+    return (i === 15 ? '<tr class="sep"><td colspan="6">Replacements</td></tr>' : '') + '<tr data-a="slot" data-id="' + i + '" class="pickrow"><td class="n hi">' + (i + 1) + '</td><td>' + slot + '</td><td class="nm">' + (p ? esc(p.n) + flags(p) + (p.pos !== slot ? ' <span class="dim">(' + p.pos + ')</span>' : '') : '<span class="bad">Empty</span>') + '</td><td class="n hi">' + (p ? p.ca : '') + '</td><td class="n ' + (p ? condCls(p.cond) : '') + '">' + (p ? p.cond : '') + '</td><td class="n">' + (p ? formS(p) : '') + '</td></tr>'; });
+  return panel('Team selection', '<p class="row">' + btn('Pick best team', 'autopick') + btn('Clear', 'clearsel') + '</p>' + (probs.length ? '<p class="bad">' + probs.map(esc).join(' ') + '</p>' : '<p class="good">Team is ready.</p>') + '<p class="dim small">Tap a shirt number to choose who wears it.</p>' +
+    table([['No', 'n'], ['Slot'], ['Player'], ['Ovr', 'n'], ['Con', 'n'], ['Frm', 'n']], rows, 'pick'));
+};
+function tacForm(tac, live) {
+  var sq = live ? [] : E.squad(G, G.user).filter(function (p) { return p.at.Gk >= 8; }).sort(function (a, b) { return b.at.Gk - a.at.Gk; });
+  var f = function (label, id, opts, help) { return '<div class="field"><label for="t_' + id + '">' + label + '</label>' + sel('t_' + id, opts, tac[id], 'tac') + '<span class="dim small">' + help + '</span></div>'; };
+  return f('Mentality', 'ment', [['def', 'Defensive'], ['bal', 'Balanced'], ['att', 'Attacking']], 'Attacking raises the try rate at both ends. Defensive lowers it at both ends.') +
+    f('Attacking style', 'style', [['tight', 'Keep it tight'], ['bal', 'Balanced'], ['wide', 'Run it wide']], 'Tight leans on the forwards and wins more penalties. Wide leans on the backs.') +
+    f('Kicking game', 'kickg', [['hand', 'Keep ball in hand'], ['bal', 'Balanced'], ['terr', 'Kick for territory']], 'Territory gives you more of the play if your kickers are better, with fewer tries either way. Ball in hand scores more, risks more and tires players.') +
+    f('Penalties', 'pens', [['goal', 'Kick at goal'], ['mix', 'Mixed'], ['corner', 'Kick to the corner']], 'The corner needs a good lineout and a strong maul.') +
+    f('Lineout calls', 'lineout', [['safe', 'Safe ball'], ['mix', 'Mixed'], ['long', 'Throw long']], 'Safe ball is rarely stolen but the maul scores less. Long throws are stolen more and score more.') +
+    f('Defensive line', 'def', [['drift', 'Drift'], ['bal', 'Balanced'], ['blitz', 'Blitz']], 'Blitz concedes fewer tries and more penalties and cards. Drift is the reverse.') +
+    f('Tackling', 'tackle', [['easy', 'Stay on feet'], ['norm', 'Normal'], ['hard', 'Hard']], 'Hard tackling defends better but brings more penalties, cards and injuries.') +
+    f('Breakdown', 'ruck', [['few', 'Commit few'], ['bal', 'Balanced'], ['hard', 'Contest everything']], 'Contesting wins more ball and gives away more penalties. Committing few keeps more men in the defensive line.') +
+    f('Tempo', 'tempo', [['slow', 'Slow'], ['norm', 'Normal'], ['fast', 'Fast']], 'Fast makes more happen for both sides and tires your players sooner.') +
+    (live ? '' : '<div class="field"><label for="t_kicker">Goal kicker</label>' + sel('t_kicker', [['', 'Best kicker on the pitch']].concat(sq.slice(0, 12).map(function (p) { return [p.id, p.n + ' (' + p.at.Gk + ')']; })), tac.kicker == null ? '' : tac.kicker, 'tac') + '<span class="dim small">Goal kicking out of 20.</span></div>') +
+    '<div class="field"><label for="t_autoSubs">Replacements</label>' + sel('t_autoSubs', [['1', 'Assistant makes them'], ['0', 'I make them myself']], tac.autoSubs ? '1' : '0', 'tac') + '<span class="dim small">Pause the match to make changes yourself.</span></div>';
+}
+S.tactics = function () { return panel('Tactics', '<div class="fields">' + tacForm(G.clubs[G.user].tac, false) + '</div>'); };
+S.fixtures = function () {
+  var mine = [], r;
+  G.fix.forEach(function (rd, i) { rd.forEach(function (f) { if (f.h === G.user || f.a === G.user) mine.push('<tr class="' + (i === G.round && G.phase === 'league' ? 'me' : '') + '"><td class="n">' + (i + 1) + '</td><td>' + (f.h === G.user ? 'H' : 'A') + '</td><td class="nm">' + club(f.h === G.user ? f.a : f.h).name + '</td><td class="sc">' + (f.res ? (f.h === G.user ? f.res.hs + ' - ' + f.res.as : f.res.as + ' - ' + f.res.hs) : '') + '</td><td>' + (f.res ? (f.res.hs === f.res.as ? 'D' : (f.res.hs > f.res.as) === (f.h === G.user) ? '<b class="good">W</b>' : '<b class="bad">L</b>') : '') + '</td></tr>'); }); });
+  r = UI.fixRound == null ? Math.min(G.round, E.ROUNDS - 1) : UI.fixRound;
+  var opts = []; for (var i = 0; i < E.ROUNDS; i++) opts.push([i, 'Round ' + (i + 1)]);
+  var po = G.po ? panel('Play-offs', resTable(G.po.sf.concat(G.po.final ? [G.po.final] : []))) : '';
+  return po + panel('Your fixtures', table([['Rd', 'n'], [''], ['Opponent'], ['Score'], ['']], mine)) + panel('All results', '<p>' + sel('fixround', opts, r, 'fixround') + '</p>' + resTable(G.fix[r]));
+};
+S.table = function () { return panel('League table', leagueTable(true) + '<p class="dim small">Win 4, draw 2. TB: bonus point for four tries. LB: bonus point for losing by seven or fewer. The top four reach the play-offs.</p>'); };
+S.stats = function () {
+  var lb = function (title, key, fmt) { return panel(title, table([['#', 'n'], ['Player'], ['Club'], ['', 'n']], E.leaders(G, key, 12).map(function (p, i) { return '<tr class="' + (p.club === G.user ? 'me' : '') + '"><td class="n">' + (i + 1) + '</td><td class="nm">' + pl(p) + '</td><td>' + club(p.club).name + '</td><td class="n hi">' + fmt(p) + '</td></tr>'; }))); };
+  return '<div class="cols">' + lb('Top try scorers', 'tries', function (p) { return p.tries; }) + lb('Top points scorers', 'pts', function (p) { return p.pts; }) + lb('Best average rating', 'avg', avgR) + lb('Most cards', 'cards', function (p) { return p.yc + ' yellow' + (p.rc ? ', ' + p.rc + ' red' : ''); }) + '</div>';
+};
+S.transfers = function () {
+  var open = E.windowOpen(G), tf = UI.tf, h = '';
+  if (G.bids.length) h += panel('Offers received', table([['Player'], ['From'], ['Fee', 'n'], ['Value', 'n'], ['']], G.bids.map(function (b) { var p = G.players[b.pid]; return '<tr><td class="nm">' + pl(p) + '</td><td>' + club(b.from).name + '</td><td class="n hi">' + money(b.fee) + '</td><td class="n">' + money(E.value(p)) + '</td><td>' + btn('Accept', 'acceptbid', 'data-id="' + b.id + '"', 'sm go') + btn('Reject', 'rejectbid', 'data-id="' + b.id + '"', 'sm') + '</td></tr>'; })));
+  if (G.offers.length) h += panel('Your offers', table([['Player'], ['Fee', 'n'], ['Wage', 'n'], ['Status']], G.offers.slice(0, 10).map(function (o) { var p = G.players[o.pid]; return '<tr><td class="nm">' + pl(p) + '</td><td class="n">' + money(o.fee) + '</td><td class="n">' + money(o.wage) + '</td><td class="' + (o.status === 'accepted' ? 'good' : o.status === 'rejected' ? 'bad' : 'warn') + '">' + esc(o.msg) + '</td></tr>'; })));
+  var lgOf = function (id) { return id === 'FA' ? 'FA' : id === 'LEG' ? 'LEG' : E.abroad(id) ? club(id).lg : 'ENG'; };
+  var list = G.players.filter(function (p) { return p.club !== G.user && p.club !== 'RET' && (!tf.pos || p.pos === tf.pos) && (!tf.club || p.club === tf.club) && (!tf.lg || lgOf(p.club) === tf.lg) && (!tf.listed || p.listed) && (!tf.name || p.n.toLowerCase().indexOf(tf.name.toLowerCase()) >= 0); });
+  list.sort(tf.sort === 'value' ? function (a, b) { return E.value(a) - E.value(b); } : tf.sort === 'age' ? function (a, b) { return a.age - b.age || b.ca - a.ca; } : function (a, b) { return b.ca - a.ca; });
+  h += panel('Player search', '<p class="' + (open ? 'dim' : 'bad') + '">' + (open ? 'The market is open until round ' + E.DEADLINE + ' has been played. Tap a player to make an offer; clubs reply after the next match. Overseas clubs ask more and their players want a bigger pay rise. Legends are 100 great players of the last twenty years, available at their peak.' : 'The transfer deadline has passed.') + '</p><div class="filters"><input id="f_name" type="text" data-c="tf" placeholder="Search by name" value="' + esc(tf.name) + '">' +
+    sel('f_pos', [['', 'All positions']].concat(E.POS.map(function (k) { return [k, E.POSN[k]]; })), tf.pos, 'tf') + sel('f_lg', [['', 'All leagues'], ['ENG', 'England'], ['Top 14', 'France: Top 14'], ['URC', 'United Rugby Championship'], ['FA', 'Free agents'], ['LEG', 'Legends']], tf.lg, 'tf') + sel('f_club', [['', 'All clubs']].concat(CLUBS.filter(function (c) { return c.id !== G.user; }).concat(FOREIGN).filter(function (c) { return !tf.lg || lgOf(c.id) === tf.lg; }).map(function (c) { return [c.id, c.name]; })), tf.club, 'tf') +
+    sel('f_listed', [['', 'Everyone'], ['1', 'Transfer listed only']], tf.listed ? '1' : '', 'tf') + sel('f_sort', [['ca', 'Best first'], ['value', 'Cheapest first'], ['age', 'Youngest first']], tf.sort, 'tf') + '</div>' +
+    table([['Player'], ['Pos'], ['Club'], ['Age', 'n'], ['Ovr', 'n'], ['Value', 'n'], ['Wage', 'n']], list.slice(0, 60).map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td>' + (p.club === 'LEG' ? p.leg + ' legend' : club(p.club).name) + '</td><td class="n">' + p.age + '</td><td class="n hi">' + p.ca + '</td><td class="n">' + money(E.value(p)) + '</td><td class="n">' + money(p.wage) + '</td></tr>'; })) +
+    (list.length > 60 ? '<p class="dim small">Showing 60 of ' + list.length + '. Narrow the search to see more.</p>' : ''));
+  return h;
+};
+S.finance = function () {
+  var u = G.clubs[G.user], bill = E.wageBill(G, G.user), L = G.ledger, pct = Math.min(100, bill / E.CAP * 100);
+  var row = function (k, v, c) { return '<tr><td>' + k + '</td><td class="n ' + (c || '') + '">' + money(v) + '</td></tr>'; };
+  return '<div class="tiles"><div><span>Bank balance</span><strong>' + money(u.bal) + '</strong></div><div><span>Wage bill</span><strong>' + money(bill) + '</strong></div><div><span>Cap room</span><strong class="' + (E.CAP - bill < 200000 ? 'warn' : '') + '">' + money(E.CAP - bill) + '</strong></div></div>' +
+    panel('Salary cap', '<div class="bar"><div style="width:' + pct.toFixed(1) + '%"></div></div><p class="dim small">' + money(bill) + ' of ' + money(E.CAP) + ' used. Squad: ' + E.squad(G, G.user).length + ' of ' + E.MAXSQUAD + '.</p>') +
+    panel('Season so far', '<div class="scroll"><table class="led"><tbody>' + row('Gate receipts', L.gate, 'good') + row('Central and commercial income', L.central, 'good') + row('Player sales', L.sales, 'good') + row('Prize money', L.prize, 'good') + row('Wages', -L.wages, 'bad') + row('Running costs', -L.costs, 'bad') + row('Player purchases', -L.buys, 'bad') + '</tbody></table></div>');
+};
+S.clubs = function () {
+  var id = UI.clubView || CLUBS.filter(function (c) { return c.id !== G.user; })[0].id, c = club(id), t = G.clubs[id];
+  return panel('Clubs', '<p>' + sel('clubsel', CLUBS.map(function (x) { return [x.id, x.name]; }), id, 'clubsel') + '</p><p class="dim">' + c.ground + ' (' + c.cap.toLocaleString('en-GB') + '). Best XV rating ' + E.xvStrength(G, id).toFixed(1) + '. Wage bill ' + money(E.wageBill(G, id)) + '. Board target: ' + t.exp.toLowerCase() + '.</p>' + squadTable(E.squad(G, id), false));
+};
+S.options = function () {
+  return panel('Options', '<p>' + (UI.memory ? '<span class="bad">This browser is not letting the game save, so progress lasts only while the page stays open.</span>' : 'The game saves itself in this browser after every match.') + '</p><p class="row">' + btn('Quit to title screen', 'quit') + btn('Delete saved game', 'wipe', '', 'danger') + '</p>') +
+    panel('Move your game to another device', '<p class="dim">A save code holds your whole season. Copy it, send it to yourself, and load it on the other device.</p><p class="row">' + btn('Create save code', 'makecode') + (UI.code ? btn(UI.copied ? 'Copied' : 'Copy code', 'copycode', '', 'go') : '') + '</p>' + (UI.code ? '<textarea id="savecode" rows="4" readonly spellcheck="false">' + UI.code + '</textarea>' : '')) + loadPanel() +
+    historyPanel() + panel('How it plays', '<ul class="help"><li>Press Continue to move to your next match. Everything else can be done from the menu first.</li><li>Ovr is a player\'s overall rating out of 100. Con is match fitness. Frm is the average of his last five match ratings.</li><li>Players out of position, tired, unhappy or out of form play below their rating. Each player also has a good or bad day; consistent players vary less.</li><li>Three yellow cards in a season bring a one-match ban. A red card brings a ban of two to five matches.</li><li>Eighteen league rounds, then semi-finals and a final at Twickenham. The best players miss rounds 10 to 12 on international duty.</li><li>The career runs season after season. Watch the Ctr column: a player whose contract ends this June leaves for nothing unless you renew him from his profile.</li><li>Miss the target the board sets too often and you will be sacked.</li></ul>');
+};
+S.prematch = function () {
+  var f = E.userFixture(G); if (!f) { UI.scr = 'news'; return S.news(); }
+  var st = E.standings(G).map(function (x) { return x.id; }), side = function (id) { var t = G.clubs[id].t; return '<div class="pm"><strong>' + club(id).name + '</strong><span>' + (st.indexOf(id) + 1) + ' in the table · W' + t.w + ' D' + t.d + ' L' + t.l + '</span><span>Best XV ' + E.xvStrength(G, id).toFixed(1) + '</span></div>'; };
+  var opp = f.h === G.user ? f.a : f.h, xv = E.pickXV(G, opp).slice(0, 15).map(function (id, i) { var p = G.players[id]; return '<tr><td class="n hi">' + (i + 1) + '</td><td class="nm">' + (p ? pl(p) : '-') + '</td><td class="n">' + (p ? p.ca : '') + '</td></tr>'; });
+  return panel(E.roundLabel(G) + ' · ' + (G.phase === 'final' ? 'Allianz Stadium, Twickenham' : club(f.h).ground), '<div class="pmrow">' + side(f.h) + '<span class="vs">v</span>' + side(f.a) + '</div><p class="row">' + btn('Kick off', 'kickoff', '', 'go') + btn('Instant result', 'instant') + btn('Change team', 'go', 'data-id="select"') + '</p>') +
+    panel(club(opp).name + ': likely XV', table([['No', 'n'], ['Player'], ['Ovr', 'n']], xv));
+};
+S.results = function () {
+  var L = G.last; if (!L) return S.news();
+  var h = panel(L.label + ' results', resTable(L.fx));
+  if (L.rat) h += panel('Player ratings', table([['Player'], ['Pos'], ['Club'], ['Min', 'n'], ['Tr', 'n'], ['Pts', 'n'], ['Rating', 'n']], L.rat.map(function (r) { var p = G.players[r.id]; return '<tr class="' + (p.club === G.user ? 'me' : '') + '"><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td>' + club(p.club).name + '</td><td class="n">' + r.mins + '</td><td class="n">' + (r.tr || '') + '</td><td class="n">' + (r.pts || '') + '</td><td class="n rt ' + ratCls(r.r) + '">' + r.r.toFixed(1) + '</td></tr>'; })));
+  return h + (G.phase === 'done' ? S.season() : panel('League table', leagueTable(true)));
+};
+function historyPanel() { return G.hist && G.hist.length ? panel('Club history', table([['Season'], ['Champions'], ['You', 'n'], ['Target']], G.hist.slice().reverse().map(function (h) { return '<tr><td>' + h.y + '/' + String(h.y + 1).slice(2) + '</td><td class="nm">' + club(h.champ).name + '</td><td class="n hi">' + h.pos + '</td><td class="' + (h.met ? 'good' : 'bad') + '">' + (h.met ? 'Met' : 'Missed') + '</td></tr>'; }))) : ''; }
+S.season = function () {
+  var v = G.verdict, ex = E.expiring(G), next = (G.year + 1) + '/' + String(G.year + 2).slice(2);
+  var h = panel('Season review', '<p class="big">' + club(G.champion).name + ' are champions.</p><p>' + club(G.user).name + ' finished ' + v.pos + (v.pos === 1 ? 'st' : v.pos === 2 ? 'nd' : v.pos === 3 ? 'rd' : 'th') + ' in the league. ' + esc(v.text) + '</p><p class="row">' + (G.sacked ? btn('Start a new game', 'quit', '', 'go') : btn('Start the ' + next + ' season', 'nextseason', '', 'go') + btn('Quit to title screen', 'quit')) + '</p>');
+  if (!G.sacked) h += panel('Contracts running out', (ex.length ? '<p class="warn">These players leave for nothing when you start the new season unless you renew them. Tap a name to offer a contract.</p>' + table([['Player'], ['Pos'], ['Age', 'n'], ['Ovr', 'n'], ['Wage', 'n'], ['Wants', 'n']], ex.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="n">' + p.age + '</td><td class="n hi">' + p.ca + '</td><td class="n">' + money(p.wage) + '</td><td class="n">' + money(E.demand(G, p)) + '</td></tr>'; })) : '<p class="good">Nobody is out of contract.</p>') +
+    '<p class="dim small">Over the summer every player ages a year: young ones improve, older ones decline and some retire. Three academy players join each club and other clubs sign free agents and players from abroad.</p>');
+  return h + panel('Play-offs', resTable(G.po.sf.concat([G.po.final]))) + panel('Final table', leagueTable(true)) + historyPanel();
+};
+
+// ---------- modals ----------
+function modal() {
+  var m = UI.modal; if (!m) return '';
+  var body = '';
+  if (m.t === 'player') {
+    var p = G.players[m.id], mine = p.club === G.user, open = E.windowOpen(G);
+    body = '<h2>' + esc(p.n) + flags(p) + '</h2><p class="dim">' + E.POSN[p.pos] + ' · ' + (p.club === 'LEG' ? p.leg + ' legend, at his peak' : club(p.club).name + (p.leg ? ' (' + p.leg + ' legend)' : '')) + ' · age ' + p.age + ' · contract to June ' + p.contract + '</p>' +
+      '<div class="tiles t4"><div><span>Overall</span><strong>' + p.ca + '</strong></div><div><span>Fitness</span><strong class="' + condCls(p.cond) + '">' + p.cond + '%</strong></div><div><span>Value</span><strong class="sm">' + money(E.value(p)) + '</strong></div><div><span>Wage</span><strong class="sm">' + money(p.wage) + '</strong></div></div>' +
+      '<div class="attrs">' + E.ATTR.map(function (k) { var v = p.at[k]; return '<div><span>' + E.ATTRN[k] + '</span><b class="' + (v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + v + '</b></div>'; }).join('') + '</div>' +
+      '<p>Morale: <b class="' + morL(p)[1] + '">' + morL(p)[0] + '</b>. Coach report: ' + report(p) + '.</p><p class="dim small">Season: ' + p.apps + ' apps, ' + p.tries + ' tries, ' + p.pts + ' points, average rating ' + avgR(p) + ', ' + p.yc + ' yellow, ' + p.rc + ' red.</p>';
+    if (mine) body += '<div class="offer"><div class="field"><label for="r_wage">New wage per year (£ thousands)</label><input id="r_wage" type="number" min="0" step="1" value="' + Math.ceil(E.demand(G, p) / 1000) + '"></div><div class="field"><label for="r_years">Years</label>' + sel('r_years', [[1, '1'], [2, '2'], [3, '3'], [4, '4']], 2, 'noop') + '</div>' + btn('Offer new contract', 'renew', 'data-id="' + p.id + '"', 'go') + '</div>' + (m.err ? '<p class="bad">' + esc(m.err) + '</p>' : '') + (m.ok ? '<p class="good">' + esc(m.ok) + '</p>' : '') + '<p class="row">' + btn(p.listed ? 'Take off the transfer list' : 'Put on the transfer list', 'list', 'data-id="' + p.id + '"') + '</p>';
+    else if (open) { var v0 = E.value(p); body += '<div class="offer"><div class="field"><label for="o_fee">Fee (£ thousands)</label><input id="o_fee" type="number" min="0" step="5" value="' + Math.round(v0 * (p.club === 'FA' ? 0 : p.listed ? 0.8 : E.abroad(p.club) ? 1.45 : 1.2) / 1000) + '"></div><div class="field"><label for="o_wage">Wage per year (£ thousands)</label><input id="o_wage" type="number" min="0" step="1" value="' + Math.ceil(p.wage * (E.abroad(p.club) ? 1.2 : 1.1) / 1000) + '"></div>' + btn('Make offer', 'offer', 'data-id="' + p.id + '"', 'go') + '</div>' + (m.err ? '<p class="bad">' + esc(m.err) + '</p>' : '') + '<p class="dim small">You have ' + money(G.clubs[G.user].bal) + ' in the bank and ' + money(E.CAP - E.wageBill(G, G.user)) + ' of cap room.</p>'; }
+  } else if (m.t === 'slot') {
+    var slot = E.SLOTS[m.i], cur = G.clubs[G.user].sel || [];
+    var cands = E.squad(G, G.user).sort(function (a, b) { return (E.avail(b) ? 1 : 0) - (E.avail(a) ? 1 : 0) || E.effSlot(b, slot) - E.effSlot(a, slot); });
+    body = '<h2>Number ' + (m.i + 1) + ': ' + E.POSN[slot] + '</h2>' + table([['Player'], ['Pos'], ['Ovr', 'n'], ['Con', 'n'], ['In', 'n']], cands.map(function (p) { var at = cur.indexOf(p.id), ok = E.avail(p);
+      return '<tr class="' + (ok ? 'pickrow' : 'off') + (at === m.i ? ' me' : '') + '"' + (ok ? ' data-a="assign" data-id="' + p.id + '"' : '') + '><td class="nm">' + esc(p.n) + flags(p) + '</td><td class="' + (E.fam(p, slot) === 1 ? 'good' : E.fam(p, slot) >= 0.85 ? 'warn' : 'bad') + '">' + p.pos + '</td><td class="n hi">' + p.ca + '</td><td class="n ' + condCls(p.cond) + '">' + p.cond + '</td><td class="n dim">' + (at >= 0 ? at + 1 : '') + '</td></tr>'; }), 'pick') +
+      '<p class="row">' + btn('Leave empty', 'assign', 'data-id="-1"') + '</p>';
+  } else if (m.t === 'sub') {
+    var s = MT.M.sides[MT.u];
+    body = '<h2>Replace ' + esc(G.players[s.xv[m.i]].n) + '</h2>' + table([['Player'], ['Pos'], ['Ovr', 'n'], ['Con', 'n']], s.bench.map(function (id, bi) { var p = G.players[id]; return '<tr class="pickrow" data-a="dosub" data-id="' + bi + '"><td class="nm">' + esc(p.n) + '</td><td class="' + (E.fam(p, E.SLOTS[m.i]) >= 0.85 ? 'good' : 'bad') + '">' + p.pos + '</td><td class="n hi">' + p.ca + '</td><td class="n">' + Math.round(MT.M.cond[id]) + '</td></tr>'; }), 'pick');
+  }
+  return '<div class="veil" data-a="close"><div class="modal" role="dialog" aria-modal="true">' + body + '<p class="row end">' + btn('Close', 'close') + '</p></div></div>';
+}
+
+// ---------- match ----------
+function matchScreen() {
+  var M = MT.M, s0 = M.sides[0], s1 = M.sides[1], last = M.log[M.log.length - 1], me = M.sides[MT.u];
+  var half = M.min === 40 && MT.paused && !MT.resumed40, ev = s0.ev + s1.ev || 1;
+  var stat = function (k, a, b) { return '<tr><td class="n hi">' + a + '</td><td class="c dim">' + k + '</td><td class="hi">' + b + '</td></tr>'; };
+  var h = '<section class="board"><div class="bd"><span class="tn" style="--k:' + club(M.h).c1 + '">' + club(M.h).name + '</span><span class="bs">' + s0.score + '</span><span class="clock">' + (M.done ? 'FT' : half ? 'HT' : M.min + "'") + '</span><span class="bs">' + s1.score + '</span><span class="tn" style="--k:' + club(M.a).c1 + '">' + club(M.a).name + '</span></div><p class="ticker k-' + last.k + '">' + esc(last.t) + '</p></section>';
+  h += '<p class="row ctl">' + (M.done ? btn('Continue', 'fulltime', '', 'go') : btn(half ? 'Start second half' : MT.paused ? 'Resume' : 'Pause', 'pause', '', MT.paused ? 'go' : '') + btn(MT.fast ? 'Speed: fast' : 'Speed: normal', 'speed') + btn('Skip to the end', 'skip') + btn(MT.panel ? 'Hide team' : 'Team and tactics', 'mpanel')) + '</p>';
+  if (MT.panel && !M.done) {
+    var canSub = MT.paused && me.bench.length && me.subs < 8;
+    var rows = function (sd, mine) { return sd.xv.map(function (id, i) { if (id == null) return '<tr class="off"><td class="n">' + (i + 1) + '</td><td colspan="5">Off the field</td></tr>'; var p = G.players[id], r = M.pr[id], bin = sd.bin.some(function (b) { return b.slot === i; }), c = Math.round(M.cond[id]), act = mine && canSub && !bin;
+      return '<tr class="' + (act ? 'pickrow' : '') + '"' + (act ? ' data-a="subpick" data-id="' + i + '"' : '') + '><td class="n hi">' + (i + 1) + '</td><td class="nm">' + esc(p.n) + (bin ? ' <b class="tag warn">BIN</b>' : r.yc ? ' <b class="tag warn">YC</b>' : '') + '</td><td>' + p.pos + '</td><td class="n ' + condCls(c) + '">' + c + '</td><td class="n rt ' + ratCls(r.r) + '">' + r.r.toFixed(1) + '</td><td class="n">' + (r.tr ? r.tr + 'T ' : '') + (r.pts - r.tr * 5 ? (r.pts - r.tr * 5) + 'k' : '') + '</td></tr>'; }); };
+    var head = [['No', 'n'], ['Player'], ['Pos'], ['Con', 'n'], ['Rat', 'n'], ['', 'n']];
+    var bench = me.bench.map(function (id) { var p = G.players[id]; return esc(p.n) + ' (' + p.pos + ', ' + p.ca + ')'; }).join(' · ');
+    h += '<div class="cols"><section class="panel"><h2>Your team</h2>' + (MT.paused ? '' : '<p class="warn small">Pause the match to make changes.</p>') + '<p class="dim small">Replacements used: ' + me.subs + ' of 8. Tap a player to replace him. Rat is his live match rating out of 10; Con is fitness.</p>' + table(head, rows(me, true), 'pick') + '<p class="dim small">Bench: ' + (bench || 'empty') + '</p></section>' +
+      '<section class="panel"><h2>' + club(M.sides[1 - MT.u].club).name + '</h2>' + table(head, rows(M.sides[1 - MT.u], false)) + '</section></div>' + panel('Tactics', '<div class="fields">' + tacForm(me.tac, true) + '</div>');
+  }
+  h += '<div class="cols"><section class="panel"><h2>Commentary</h2><ol class="feed">' + M.log.slice(-60).reverse().map(function (l) { return '<li class="k-' + l.k + '"><span>' + l.m + "'</span>" + esc(l.t) + '</li>'; }).join('') + '</ol></section>' +
+    panel('Match stats', '<div class="scroll"><table class="ms"><tbody>' + stat('Tries', s0.tries, s1.tries) + stat('Conversions', s0.cons, s1.cons) + stat('Penalty goals', s0.pens, s1.pens) + stat('Drop goals', s0.dgs, s1.dgs) + stat('Attacking share', Math.round(s0.ev / ev * 100) + '%', Math.round(s1.ev / ev * 100) + '%') + stat('Yellow cards', s0.yc, s1.yc) + stat('Red cards', s0.rc, s1.rc) + '</tbody></table></div>') + '</div>';
+  return h;
+}
+function tick() { if (!MT || MT.paused || MT.M.done) return; E.stepMinute(G, MT.M); if (MT.M.min === 40 && !MT.M.done) { MT.paused = true; MT.resumed40 = false; } if (MT.M.done) stopTimer(); render(); }
+function startTimer() { stopTimer(); MT.timer = setInterval(tick, MT.fast ? 220 : 750); }
+function stopTimer() { if (MT && MT.timer) { clearInterval(MT.timer); MT.timer = null; } }
+function finishRound(f, M) {
+  var label = E.roundLabel(G), fx = E.curFixtures(G), rat = null;
+  if (f) { E.record(G, f, M); rat = Object.keys(M.pr).filter(function (id) { return M.pr[id].mins > 0; }).map(function (id) { var r = M.pr[id]; return {id: +id, mins: r.mins, tr: r.tr, pts: r.pts, r: r.r}; }).sort(function (a, b) { return (G.players[b.id].club === G.user) - (G.players[a.id].club === G.user) || b.r - a.r; }); }
+  E.simOthers(G);
+  G.last = {label: label, fx: fx.map(function (x) { return {h: x.h, a: x.a, res: x.res}; }), rat: rat};
+  E.advance(G); MT = null; UI.scr = 'results'; UI.modal = null; save();
+}
+
+// ---------- actions ----------
+var A = {
+  'new': function (d) { var name = ($('mgr') && $('mgr').value.trim()) || 'Manager'; G = E.newGame(d.id, name, (Date.now() % 2147483647) | 0); UI.scr = 'news'; save(); },
+  resume: function () { G = E.migrate(load()); UI.scr = 'news'; save(); },
+  go: function (d) { UI.scr = d.id; },
+  sort: function (d) { var q = UI.sq; if (q.k === d.id) q.d = -q.d; else { q.k = d.id; q.d = d.id === 'n' || d.id === 'pos' ? 1 : -1; } },
+  'continue': function () {
+    if (G.phase === 'done') { UI.scr = 'season'; return; }
+    var f = E.userFixture(G);
+    if (!f) return finishRound(null, null);
+    var probs = E.selProblems(G, G.user, G.clubs[G.user].sel);
+    if (probs.length) { UI.scr = 'select'; UI.msg = 'Sort out your team before kick-off. ' + probs[0]; return 'keepmsg'; }
+    UI.scr = 'prematch';
+  },
+  kickoff: function () { var f = E.userFixture(G); MT = {f: f, M: E.matchFor(G, f), paused: false, fast: false, panel: false, u: f.h === G.user ? 0 : 1, resumed40: true}; startTimer(); },
+  instant: function () { var f = E.userFixture(G); finishRound(f, E.playOut(G, E.matchFor(G, f))); },
+  pause: function () { MT.paused = !MT.paused; if (!MT.paused) MT.resumed40 = true; },
+  speed: function () { MT.fast = !MT.fast; startTimer(); },
+  skip: function () { stopTimer(); MT.M.sides[MT.u].auto = true; E.playOut(G, MT.M); },
+  mpanel: function () { MT.panel = !MT.panel; },
+  subpick: function (d) { UI.modal = {t: 'sub', i: +d.id}; },
+  dosub: function (d) { E.doSub(G, MT.M, MT.u, UI.modal.i, +d.id, false); UI.modal = null; },
+  fulltime: function () { stopTimer(); finishRound(MT.f, MT.M); },
+  player: function (d) { UI.modal = {t: 'player', id: +d.id}; },
+  club: function (d) { UI.clubView = d.id; UI.scr = 'clubs'; },
+  close: function () { UI.modal = null; },
+  slot: function (d) { UI.modal = {t: 'slot', i: +d.id}; },
+  assign: function (d) { var c = G.clubs[G.user], s = c.sel || (c.sel = []), i = UI.modal.i, id = +d.id; for (var k = 0; k < 23; k++) if (s[k] === undefined) s[k] = null;
+    if (id < 0) s[i] = null; else { var at = s.indexOf(id); if (at >= 0) s[at] = s[i]; s[i] = id; } UI.modal = null; save(); },
+  autopick: function () { G.clubs[G.user].sel = E.pickXV(G, G.user); save(); },
+  clearsel: function () { G.clubs[G.user].sel = E.SLOTS.map(function () { return null; }); save(); },
+  renew: function (d) { var p = G.players[+d.id], err = E.renew(G, p.id, Math.round(+$('r_wage').value || 0) * 1000, +$('r_years').value); UI.modal.err = err; UI.modal.ok = err ? '' : p.n + ' signs a new deal to June ' + p.contract + '.'; if (!err) save(); },
+  nextseason: function () { E.newSeason(G); UI.scr = 'news'; UI.modal = null; save(); },
+  list: function (d) { var p = G.players[+d.id]; p.listed = !p.listed; save(); },
+  offer: function (d) { var fee = Math.max(0, Math.round(+$('o_fee').value || 0)) * 1000, wage = Math.max(0, Math.round(+$('o_wage').value || 0)) * 1000, err = E.makeOffer(G, +d.id, fee, wage);
+    if (err) UI.modal.err = err; else { UI.modal = null; UI.msg = 'Offer sent. You will hear back after the next match.'; save(); return 'keepmsg'; } },
+  acceptbid: function (d) { E.acceptBid(G, +d.id); save(); },
+  rejectbid: function (d) { E.rejectBid(G, +d.id); save(); },
+  quit: function () { G = null; MT = null; UI.code = ''; },
+  makecode: function () { encodeSave().then(function (c) { UI.code = c; UI.copied = false; render(); }); },
+  copycode: function () { var done = function () { UI.copied = true; render(); }; try { navigator.clipboard.writeText(UI.code).then(done, function () { $('savecode').select(); }); } catch (e) { $('savecode').select(); } return 'norender'; },
+  loadsave: function () { var v = $('loadcode').value; UI.loadErr = '';
+    decodeSave(v).then(function (g) { G = E.migrate(g); MT = null; UI.scr = 'news'; UI.code = ''; save(); render(); }, function () { UI.loadErr = 'That code could not be read. Copy the whole code, starting with RM1: or RM0:, and try again.'; render(); }); return 'norender'; },
+  wipe: function () { wipe(); G = null; }
+};
+var C = {
+  tac: function (el) { var k = el.id.slice(2), tac = MT ? MT.M.sides[MT.u].tac : G.clubs[G.user].tac, v = el.value;
+    if (k === 'kicker') tac.kicker = v === '' ? null : +v; else if (k === 'autoSubs') { tac.autoSubs = v === '1'; if (MT) MT.M.sides[MT.u].auto = tac.autoSubs; } else tac[k] = v;
+    if (MT) { var keep = G.clubs[G.user].tac; if (k !== 'kicker') keep[k] = tac[k]; } save(); },
+  sq: function () { UI.sq.pos = $('sq_pos').value; UI.sq.view = $('sq_view').value; if (UI.sq.view === 'main' && E.ATTR.indexOf(UI.sq.k) >= 0) { UI.sq.k = 'pos'; UI.sq.d = 1; } },
+  noop: function () {},
+  tf: function () { var lg = $('f_lg').value; UI.tf = {pos: $('f_pos').value, lg: lg, name: $('f_name').value.trim(), club: lg !== UI.tf.lg ? '' : $('f_club').value, listed: $('f_listed').value === '1', sort: $('f_sort').value}; },
+  fixround: function (el) { UI.fixRound = +el.value; },
+  clubsel: function (el) { UI.clubView = el.value; }
+};
+
+var lastScr = '';
+function render() {
+  var y = window.scrollY, key = (G ? UI.scr : 'start') + (MT ? 'm' : '');
+  $('app').innerHTML = !G ? startScreen() : MT ? frame(matchScreen(), true) + modal() : frame((S[UI.scr] || S.news)()) + modal();
+  if (key === lastScr) window.scrollTo(0, y); else window.scrollTo(0, 0);
+  lastScr = key;
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('[data-a]'); if (!t) return;
+  if (t.dataset.a === 'close' && t.classList.contains('veil') && e.target !== t) return;
+  if (t.tagName === 'A') e.preventDefault();
+  var keep = A[t.dataset.a](t.dataset); if (keep !== 'keepmsg') UI.msg = '';
+  if (keep !== 'norender') render();
+});
+document.addEventListener('change', function (e) { var t = e.target.closest('[data-c]'); if (!t) return; C[t.dataset.c](t); render(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && UI.modal) { UI.modal = null; render(); } });
+render();
+})();
+</script>
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});</script>
+</body>
+</html>
