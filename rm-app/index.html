@@ -586,7 +586,7 @@ function selProblems(G,cid,sel){
 function xvStrength(G,cid){ var s=pickXV(G,cid),t=0,n=0; for(var i=0;i<15;i++) if(s[i]!=null){ t+=G.players[s[i]].ca; n++; } return n?t/n:0; }
 
 function defaultTac(){ return {style:'bal',ment:'bal',kickg:'bal',pens:'mix',def:'bal',tackle:'norm',ruck:'bal',lineout:'mix',tempo:'norm',kicker:null,captain:null,autoSubs:true}; }
-var DATAV='2026-11-11p';
+var DATAV='2026-11-11r';
 // Rating and age corrections reach a saved career only in its first season, before players have developed.
 function applyData(G){
   var base={}; CLUBS.forEach(function(c){ Object.keys(c.squad).forEach(function(k){ c.squad[k].forEach(function(e){ var a=e.split('|'); base[nrm(a[0])]=[+a[1],+a[2]]; }); }); });
@@ -659,6 +659,11 @@ function newMatch(G,hid,aid,opt){
       M.day[id]=1+(R0()-0.5)*2*(0.02+(20-h.Con)/20*0.10)+(M.big?(h.Big-10)/10*0.04:0); } });
     M.sides.push(s);
   });
+  try{ var star=function(sx){ var b=null; M.sides[sx].xv.forEach(function(id){ if(id!=null && (!b||G.players[id].ca>G.players[b].ca)) b=id; }); return b!=null?G.players[b].n:''; };
+    M.tx=(G.year*31+(G.round||0)*17+hid.charCodeAt(0)*7+aid.charCodeAt(aid.length-1))|0;
+    if(M.stage==='league' && G.round>=3 && G.phase==='league'){ var stn=standings(G).map(function(x){ return x.id; }), ph=stn.indexOf(hid)+1, pa2=stn.indexOf(aid)+1; if(ph&&pa2) say(M,0,'info',-1,club(hid).name+' are '+ordn(ph)+' in the table, '+club(aid).name+' '+ordn(pa2)+'.'+(ph<=4&&pa2<=4?' A big one for the play-off race.':'')); }
+    else if(M.ko) say(M,0,'info',-1,'Knockout rugby. There is no tomorrow for the loser.');
+    say(M,0,'info',-1,'Ones to watch: '+star(0)+' for '+club(hid).name+' and '+star(1)+' for '+club(aid).name+'.'); }catch(e){}
   say(M,0,'info',-1,'Kick-off at '+(M.neutral?'Allianz Stadium, Twickenham':club(hid).ground)+'.');
   return M;
 }
@@ -681,7 +686,7 @@ function pickOn(G,M,si,R,wfn){ var c=[],tot=0; for(var i=0;i<15;i++){ var p=onPi
 function doSub(G,M,si,slot,bi,forced){
   var s=M.sides[si], out=s.xv[slot], inn=s.bench[bi]; if(inn==null) return false;
   s.xv[slot]=inn; s.bench.splice(bi,1); if(!forced) s.subs++;
-  say(M,M.min,'sub',si,'Substitution for '+club(s.club).name+': '+G.players[inn].n+' on'+(out!=null?' for '+G.players[out].n:'')+'.');
+  say(M,M.min,'sub',si,(forced?'Forced change':slot<3?'Fresh legs in the front row':M.min<50?'An early change':'Substitution')+' for '+club(s.club).name+': '+G.players[inn].n+' on'+(out!=null?' for '+G.players[out].n:'')+'.');
   return true;
 }
 function isFront(pos){ return pos==='LP'||pos==='HK'||pos==='TP'; }
@@ -709,18 +714,48 @@ function tm(t){ return {
   bd:t.ruck==='hard'?1.06:t.ruck==='few'?0.94:1,
   def:(t.ruck==='hard'?0.98:t.ruck==='few'?1.03:1)*(t.tackle==='hard'?1.03:t.tackle==='easy'?0.99:1),
   drain:(t.tempo==='fast'?1.15:t.tempo==='slow'?0.9:1)*(t.kickg==='hand'?1.05:1)*(t.tackle==='hard'?1.04:1) }; }
+function tpick(M,a){ M.tx=((M.tx||7)*1103515245+12345)&0x7fffffff; var i=(M.tx>>>8)%a.length, u=M.used||(M.used=[]), k=0; while(k<a.length && u.indexOf(a[i])>=0){ i=(i+1)%a.length; k++; } u.push(a[i]); if(u.length>14) u.shift(); return a[i]; }
+function cnm(M,si){ return club(M.sides[si].club).name; }
+function ordn(n){ return n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th'); }
+function onN(G,M,si){ var n=0; for(var i=0;i<15;i++) if(onPitch(G,M,si,i)) n++; return n; }
+function near(G,M,si,slots,r){ return onPitch(G,M,si,slots[r%slots.length])||onPitch(G,M,si,r); }
+function ctx(M,si,pts){ var now=M.sides[si].score-M.sides[1-si].score, before=now-pts, tot=M.sides[0].score+M.sides[1].score-pts, c=cnm(M,si), o=cnm(M,1-si), t;
+  if(tot===0) t=tpick(M,[c+' draw first blood.','The first points of the match go to '+c+'.',c+' are on the board.']);
+  else if(before<0 && now>0) t=tpick(M,[c+' hit the front.','The lead changes hands.',c+' are in front, and '+o+' have it all to do again.']);
+  else if(before<0 && now===0) t=tpick(M,['All square.',c+' are level.','We are level again.']);
+  else if(before<0) t=tpick(M,M.min<55?[c+' hit straight back.','The gap is down to '+(-now)+'.',c+' are back within '+(-now)+'.']:[c+' are back within '+(-now)+'.','The gap is down to '+(-now)+'.',c+' are not finished yet.']);
+  else if(before===0) t=tpick(M,[c+' edge ahead.',c+' break the deadlock.',c+' have their noses in front.']);
+  else if(now>=21) t=tpick(M,[c+' are out of sight.','This is turning into a rout.',o+' have no answer.']);
+  else if(now>7 && before<=7) t=tpick(M,[c+' are more than a score clear.','That gives '+c+' some breathing space.',o+' now need to score twice.']);
+  else t=tpick(M,[c+' stretch the lead to '+now+'.',c+' pull further clear.','The lead is out to '+now+'.']);
+  var r=M.run||(M.run={si:-1,n:0,m:0}); if(r.si===si && M.min-r.m<=12) r.n++; else { r.si=si; r.n=1; } r.m=M.min;
+  if(r.n===3) t+=' That is three scores in quick succession: '+c+' have all the momentum.';
+  return t; }
+var TRYT=[
+ ['%p burrows over from a metre out after a string of pick-and-goes.','%p is driven over by the %c pack.','%p shows a turn of pace nobody knew he had and flops over the line.','Front-row power: %p barges through two tacklers to score.'],
+ ['%p reaches out a long arm and grounds it against the base of the post.','%p takes a short ball at pace and nobody is stopping him from there.','%p peels round the front of the lineout and crashes over.'],
+ ['%p picks up from the base of the ruck and powers over.','%p breaks off the back of the scrum and beats the cover to the corner.','%p is on the shoulder of the break and finishes under the posts.','%p charges down a clearance and wins the race to the ball.'],
+ ['%p snipes round the fringe and darts over.','%p taps a quick penalty, catches %o napping and scores.','%p follows the break on the inside and takes the scoring pass.'],
+ ['%p shows the ball, keeps it and glides through the gap.','Well, that is one way to do it. %p simply walks through a gap that should not be there.','%p chips over the top, regathers and scores.','%p spots a prop in the defensive line, steps him and is away.'],
+ ['%p hits a short ball at pace and splits the midfield.','Somebody has left the gate open, and %p is through it.','%p steps off his left foot and is through under the posts.','%p hands off his man and has the legs to finish.','%p picks off a pass on halfway and runs it all the way back.'],
+ ['%p takes it on the touchline, beats his man on the outside and finishes in the corner.','%p collects a cross-kick and touches down in the corner.','%p has acres of space on the overlap and strolls in.','%p chases a kick through and wins the race to the line.','%p goes the length of the field after a %o mistake.'],
+ ['%p hits the line at full tilt and nobody lays a hand on him.','%p fields a loose kick, spots a gap and counter-attacks from deep to score.','%p joins the line as the extra man and goes over out wide.']],
+ TRYS=[0,0,0,1,1,2,2,2,3,4,6,5,5,6,7],
+ MAULT=['%c kick to the corner, the maul rumbles over and %p touches down.','Catch and drive from %c. The maul marches ten metres and %p is at the back of it to score.','%c go to the corner again, %o cannot stop the drive legally and %p flops over.'],
+ ASST=['%a made it with a superb offload.','%a put him through the gap with a flat pass.','%a drew two defenders before releasing him.','A lovely long pass from %a opened it up.','%a did the damage with the initial break.'];
 function tryScored(G,M,si,R,maul,txt){
   var s=M.sides[si];
   var W=maul?[1,5,1,1.2,1.2,2,2,2.2,0,0,0,0,0,0,0]:[.5,1.2,.5,.6,.6,1.3,1.4,1.5,1.2,1,3,1.8,1.9,3,2.2];
   var c=pickOn(G,M,si,R,function(p,i){ return W[i]*(maul?1:(p.at.Pc+p.at.Ca)/24); }); if(!c) return;
   var p=c[0], as=''; s.tries++; M.pr[p.id].tr++; addScore(M,si,p.id,5); bump(M,p,maul?0.6:1.0);
-  if(!maul){ var a=pickOn(G,M,si,R,function(q,i){ return q.id===p.id?0:(i>=8?q.at.Pa:q.at.Pa*0.25); }); if(a && R()<0.75){ bump(M,a[0],0.4); as=' Created by '+a[0].n+'.'; } }
+  if(!maul){ var a=pickOn(G,M,si,R,function(q,i){ return q.id===p.id?0:(i>=8?q.at.Pa:q.at.Pa*0.25); }); if(a && R()<0.75){ bump(M,a[0],0.4); as=' '+tpick(M,ASST).replace('%a',a[0].n); } }
   unit(G,M,si,maul?FW:BK,0.06); unit(G,M,1-si,maul?FW:BK,-0.1); if(!maul) unit(G,M,1-si,[5,6,7],-0.05);
-  say(M,M.min,'try',si,'TRY! '+txt.replace('%p',p.n).replace('%c',club(s.club).name)+as+' '+score(M));
+  var tt=tpick(M,maul?MAULT:TRYT[TRYS[c[1]]]).replace('%p',p.n).replace('%c',cnm(M,si)).replace('%o',cnm(M,1-si)), nt=M.pr[p.id].tr;
+  say(M,M.min,'try',si,'TRY! '+tt+as+(nt===2?' That is his second of the match.':nt===3?' A HAT-TRICK for '+p.n+'!':nt>3?' He has '+nt+' today!':'')+(s.tries===4&&M.stage==='league'?' That is the try bonus point for '+cnm(M,si)+'.':'')+' '+ctx(M,si,5)+' '+score(M));
   var k=kicker(G,M,si); if(!k) return;
   var wide = !maul && (c[1]===10||c[1]===13) ? 0.12 : 0;
-  if(R() < clamp(0.47+0.022*k.at.Gk-wide+(R()-0.5)*0.1,0.2,0.97)){ s.cons++; addScore(M,si,k.id,2); bump(M,k,0.2); say(M,M.min,'kick',si,k.n+' adds the conversion. '+score(M)); }
-  else { bump(M,k,-0.2); say(M,M.min,'info',si,k.n+' pulls the conversion wide.'); }
+  if(R() < clamp(0.47+0.022*k.at.Gk-wide+(R()-0.5)*0.1,0.2,0.97)){ s.cons++; addScore(M,si,k.id,2); bump(M,k,0.2); say(M,M.min,'kick',si,tpick(M,[k.n+' adds the conversion'+(wide?' from out wide':'')+'.',k.n+' bangs over the extras'+(wide?' from the touchline':'')+'.','Converted by '+k.n+'.',k.n+' could not have placed it better with his hands.'])+' '+score(M)); }
+  else { bump(M,k,-0.2); say(M,M.min,'info',si,tpick(M,[k.n+' pulls the conversion wide.',k.n+' hits the post with the conversion.','The conversion drifts across the face of the posts.',k.n+' will want to forget that one in a hurry.'])); }
 }
 function score(M){ return '('+club(M.h).name+' '+M.sides[0].score+'-'+M.sides[1].score+' '+club(M.a).name+')'; }
 function pick(R,a){ return a[Math.floor(R()*a.length)]; }
@@ -729,7 +764,7 @@ function stepMinute(G,M){
   if(M.done) return;
   var R=rng(G); M.min++; var m=M.min, si, i, mod=[tm(M.sides[0].tac),tm(M.sides[1].tac)], mean=[0,0];
   for(si=0;si<2;si++){ var s=M.sides[si], n=0;
-    for(i=s.bin.length-1;i>=0;i--) if(s.bin[i].until<=m){ say(M,m,'info',si,G.players[s.bin[i].pid].n+' returns from the sin bin.'); s.bin.splice(i,1); }
+    for(i=s.bin.length-1;i>=0;i--) if(s.bin[i].until<=m){ var bp=G.players[s.bin[i].pid]; s.bin.splice(i,1); say(M,m,'info',si,bp.n+' returns from the sin bin. '+club(s.club).name+' are back to '+onN(G,M,si)+'.'); }
     for(i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; M.pr[p.id].mins++; M.cond[p.id]=Math.max(20,M.cond[p.id]-(isFwd(p.pos)?0.5:0.4)*(1.3-p.at.St/40)*mod[si].drain); mean[si]+=p.ca; n++; }
     mean[si] = n ? mean[si]/15 : 60;
     if(s.auto && m>=46 && m%4===0 && m<76 && s.subs<8) aiSubs(G,M,si);
@@ -763,50 +798,65 @@ function stepMinute(G,M){
       var off=pickOn(G,M,d,R,function(p){ return 21-p.at.Di+p.hid.Drt; });
       var yq=R(), carded=false;
       if(off){ var op=off[0], drt=op.hid.Drt; bump(M,op,-0.4);
-        if(yq<0.007*mod[d].card*(0.5+drt/19)){ carded=true; D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2.5); say(M,m,'card',d,'RED CARD! '+op.n+' ('+dn+') is sent off for a dangerous tackle.'); }
+        if(yq<0.007*mod[d].card*(0.5+drt/19)){ carded=true; D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2.5); say(M,m,'card',d,'RED CARD! '+op.n+' ('+dn+') is sent off '+tpick(M,['for a dangerous high tackle','for a tip tackle','for contact with the head at a ruck'])+'. '+dn+' must play the rest of the match with '+onN(G,M,d)+'.'); }
         else if(yq<0.007+0.115*mod[d].card*(0.45+drt/17)){ carded=true; D.yc++; M.pr[op.id].yc++;
-          if(M.pr[op.id].yc>=2){ D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2); say(M,m,'card',d,'Second yellow card! '+op.n+' ('+dn+') is sent off.'); }
-          else { bump(M,op,-1); D.bin.push({slot:off[1],until:m+10,pid:op.id}); say(M,m,'card',d,'Yellow card! '+op.n+' ('+dn+') goes to the sin bin for ten minutes.'); } }
+          if(M.pr[op.id].yc>=2){ D.rc++; M.pr[op.id].rc=1; D.xv[off[1]]=null; bump(M,op,-2); say(M,m,'card',d,'Second yellow card! '+op.n+' ('+dn+') is sent off. '+dn+' are down to '+onN(G,M,d)+' for good.'); }
+          else { bump(M,op,-1); D.bin.push({slot:off[1],until:m+10,pid:op.id}); say(M,m,'card',d,'Yellow card! '+op.n+' ('+dn+') goes to the sin bin '+tpick(M,['for a deliberate knock-on','for killing the ball on his own line','for a high tackle','for repeated infringements','for pulling down the maul'])+'. '+dn+' are down to '+onN(G,M,d)+' for ten minutes.'); } }
       }
       var k=kicker(G,M,a), diff=A.score-D.score;
       var pg = A.tac.pens==='goal'?0.85:A.tac.pens==='corner'?0.12:0.45;
       if(m>=70 && diff<-3 && diff>=-8) pg=0.1; if(m>=70 && diff>=-3 && diff<=0) pg=0.95; if(carded) pg*=0.6;
       if(k && R()<pg){
-        if(R() < clamp(0.50+0.021*k.at.Gk+(R()-0.5)*0.25,0.2,0.96)){ A.pens++; addScore(M,a,k.id,3); bump(M,k,0.3); say(M,m,'kick',a,'Penalty to '+an+(off?' ('+off[0].n+' penalised)':'')+'. '+k.n+' kicks the three points. '+score(M)); }
-        else { bump(M,k,-0.3); say(M,m,'info',a,'Penalty to '+an+', but '+k.n+' pushes the kick wide.'); }
+        if(R() < clamp(0.50+0.021*k.at.Gk+(R()-0.5)*0.25,0.2,0.96)){ A.pens++; addScore(M,a,k.id,3); bump(M,k,0.3); var dist=tpick(M,[22,28,32,35,38,42,46]); say(M,m,'kick',a,'Penalty to '+an+(off&&!carded?': '+off[0].n+' is penalised '+tpick(M,['for not rolling away','for going off his feet at the ruck','for offside','for a high tackle','for collapsing the scrum','for hands in the ruck','for obstruction','for a late hit on the kicker']):'')+'. '+k.n+tpick(M,[' kicks the three points',' makes no mistake',' sends it straight between the posts'])+' from '+dist+' metres. '+ctx(M,a,3)+' '+score(M)); }
+        else { bump(M,k,-0.3); say(M,m,'info',a,'Penalty to '+an+tpick(M,[', but '+k.n+' pushes the kick wide.',', but '+k.n+' hits the upright and '+dn+' clear.','. '+k.n+' has a go from long range and it drops just short.'])); }
       } else {
         var lo=A.tac.lineout, hk=onPitch(G,M,a,1);
         if(R() < clamp(0.84+(lo==='safe'?0.06:lo==='long'?-0.08:0)+(ra.line-rd.line)/160,0.5,0.97)){
           if(R() < 0.30*(lo==='safe'?0.85:lo==='long'?1.25:1)*Math.exp((ra.fwd-(rd.def+rd.scrum)/2-4)/26)) tryScored(G,M,a,R,true,'%c kick to the corner, the maul rumbles over and %p touches down.');
-          else { unit(G,M,d,FW,0.08); say(M,m,'info',a,an+' kick to the corner and drive the maul, but '+dn+' hold them up.'); }
-        } else { var st=pickOn(G,M,d,R,function(p,i){ return i===3||i===4?3:i>=5&&i<=7?1:0; }); if(st) bump(M,st[0],0.35); bump(M,hk,-0.3); say(M,m,'info',d,an+' go to the corner but '+(st?st[0].n+' steals the lineout for '+dn:dn+' steal the lineout')+'.'); }
+          else { unit(G,M,d,FW,0.08); say(M,m,'info',a,tpick(M,[an+' kick to the corner and drive the maul, but '+dn+' hold them up.',an+' turn down the three points and go to the corner. '+dn+' sack the maul and survive.',an+' drive from the lineout but are held up over the line. Goal-line drop-out.'])); }
+        } else { var st=pickOn(G,M,d,R,function(p,i){ return i===3||i===4?3:i>=5&&i<=7?1:0; }); if(st) bump(M,st[0],0.35); bump(M,hk,-0.3); say(M,m,'info',d,an+' go to the corner but '+(st?st[0].n+tpick(M,[' steals the lineout for ',' gets a hand to the throw for ',' reads the call and pinches it for '])+dn:dn+' steal the lineout')+'.'+(hk?' '+hk.n+' will want that throw back.':'')); }
       }
     } else if(q<pTry+pPen+0.0015*ra.kick/75){
-      var fh=onPitch(G,M,a,9)||kicker(G,M,a); if(fh){ A.dgs++; addScore(M,a,fh.id,3); bump(M,fh,0.5); say(M,m,'kick',a,'Drop goal! '+fh.n+' slots it for '+an+'. '+score(M)); }
+      var fh=onPitch(G,M,a,9)||kicker(G,M,a); if(fh){ A.dgs++; addScore(M,a,fh.id,3); bump(M,fh,0.5); say(M,m,'kick',a,tpick(M,['Drop goal! '+fh.n+' drops back into the pocket and slots it for '+an+'.','Drop goal! Nothing was on, so '+fh.n+' takes the three points on offer.'])+' '+ctx(M,a,3)+' '+score(M)); }
     } else if(q<pTry+pPen+pInj){
       var hs=R()<0.5?0:1, h=pickOn(G,M,hs,R,function(p){ return p.hid.Inj; });
-      if(h){ var wk=1+Math.min(20,Math.floor(-Math.log(1-R())*3)); M.pr[h[0].id].inj=wk; say(M,m,'card',hs,'Injury: '+h[0].n+' ('+club(M.sides[hs].club).name+') cannot continue.');
+      if(h){ var wk=1+Math.min(20,Math.floor(-Math.log(1-R())*3)); M.pr[h[0].id].inj=wk; say(M,m,'card',hs,'Injury: '+h[0].n+' ('+club(M.sides[hs].club).name+')'+(wk<=1?tpick(M,[' takes a knock and cannot continue.',' goes off for a head injury assessment and will not return.']):wk<=5?tpick(M,[' limps off holding his hamstring.',' is helped from the field with a shoulder problem.',' hobbles off with an ankle injury.']):tpick(M,[' is carried off on a stretcher. That looks serious.',' is down for a long time and leaves on the cart. A worrying sight.'])));
         var bi=bestBench(G,M,hs,h[1]); if(bi>=0) doSub(G,M,hs,h[1],bi,true); else M.sides[hs].xv[h[1]]=null; }
     } else if(R()<0.6){
-      var pa=onPitch(G,M,a,Math.floor(R()*15)), pd=onPitch(G,M,d,Math.floor(R()*15)), L=[];
+      var r1=Math.floor(R()*15), r2=Math.floor(R()*15), L=[], N=function(q){ return q?q.n:''; };
+      var pa=onPitch(G,M,a,r1), pd=onPitch(G,M,d,r2), bk=near(G,M,a,[9,10,11,12,13,14],r1), fw=near(G,M,a,[0,1,2,3,4,5,6,7],r1), kk=near(G,M,a,[8,9,14],r1), dbr=near(G,M,d,[5,6,7,1],r2), dk=near(G,M,d,[8,9,14],r2), dbk=near(G,M,d,[10,11,12,13,14],r2), lp=onPitch(G,M,a,0), hk2=onPitch(G,M,a,1);
       var ev=function(t,f){ L.push([t,f]); };
-      if(pa){ ev(pa.n+' makes a break for '+an+' but the cover defence gets across.',function(){ bump(M,pa,0.3); }); ev(pa.n+' knocks on with the line in sight.',function(){ bump(M,pa,-0.4); });
-        ev(pa.n+' carries hard and makes good ground for '+an+'.',function(){ bump(M,pa,0.2); }); ev(pa.n+' throws a loose pass and the '+an+' move breaks down.',function(){ bump(M,pa,-0.3); }); ev(pa.n+' puts up a high ball and '+an+' chase hard.',function(){ bump(M,pa,0.1); }); }
-      if(pd){ ev('Turnover! '+pd.n+' gets over the ball and wins it back for '+dn+'.',function(){ bump(M,pd,0.4); }); ev('Big tackle from '+pd.n+' stops the '+an+' attack.',function(){ bump(M,pd,0.3); });
-        ev(pd.n+' clears to touch for '+dn+'.',function(){ bump(M,pd,0.1); }); ev(pd.n+' misses a tackle but the '+dn+' cover scrambles back.',function(){ bump(M,pd,-0.3); }); }
-      if(ra.scrum>rd.scrum+3) ev(an+' win a scrum against the head.',function(){ unit(G,M,a,[0,1,2],0.2); unit(G,M,d,[0,1,2],-0.2); }); else ev('Scrum reset. The referee has a word with both front rows.',function(){});
-      if(ra.line>rd.line) ev(an+' take clean lineout ball and set the maul.',function(){ unit(G,M,a,[1,3,4],0.1); }); else ev(dn+' disrupt the '+an+' lineout.',function(){ unit(G,M,d,[3,4],0.2); bump(M,onPitch(G,M,a,1),-0.2); });
-      ev(an+' go through the phases in the '+dn+' 22.',function(){ unit(G,M,a,FW,0.03); });
-      var e=pick(R,L); e[1](); say(M,m,'info',a,e[0]);
+      if(pa){ ev([N(bk)+' makes a clean break for '+an+' but the cover defence gets across.',N(bk)+' steps inside two defenders and is dragged down five metres short.',N(bk)+' is away down the touchline, and is bundled into touch by the last man.',N(bk)+' is as hard to hold as a wet bar of soap, but the last man hangs on.'],function(){ bump(M,bk,0.3); });
+        ev([N(pa)+' knocks on with the line in sight.',N(pa)+' spills it in contact and the chance is gone.',N(pa)+' takes his eye off the pass with an overlap outside him.','Butter fingers. '+N(pa)+' drops it cold. Oh, dear me.'],function(){ bump(M,pa,-0.4); });
+        ev([N(fw)+' carries hard and makes good ground for '+an+'.',N(fw)+' takes three defenders with him over the gain line.',N(fw)+' trucks it up the middle. Quick ball for '+an+'.','The big fellow '+N(fw)+' is rumbling like a combine harvester.',N(fw)+' has legs like tree trunks and he is using both of them.'],function(){ bump(M,fw,0.2); });
+        ev([N(bk)+' throws a loose pass and the '+an+' move breaks down.',N(bk)+' forces the offload and it goes to ground.',N(bk)+' floats one straight into touch.','Milk turns quicker than that pass from '+N(bk)+'.'],function(){ bump(M,bk,-0.3); });
+        ev([N(kk)+' puts up a high ball and '+an+' chase hard.',N(kk)+' hoists a box kick and the chasers are under it.',N(kk)+' finds a huge touch with a 50:22. Attacking lineout to '+an+'.',N(kk)+' pins '+dn+' back in their own 22 with a raking kick.'],function(){ bump(M,kk,0.1); }); }
+      if(pd){ ev(['Turnover! '+N(dbr)+' gets over the ball and wins it back for '+dn+'.',N(dbr)+' is on the ball in a flash. Penalty to '+dn+' at the breakdown.',N(dbr)+' rips the ball in the tackle. Superb work.'],function(){ bump(M,dbr,0.4); });
+        ev(['Big tackle from '+N(pd)+' stops the '+an+' attack.',N(pd)+' lines up his man and smashes him back five metres.',N(pd)+' makes a try-saving tackle in the corner.','A choke tackle led by '+N(pd)+' wins '+dn+' the scrum.','You could hear that hit in the car park. '+N(pd)+' stops the attack dead.',N(pd)+' hits his man like a runaway hay cart. He will feel that in the morning.'],function(){ bump(M,pd,0.3); });
+        ev([N(dk)+' clears to touch for '+dn+'.',N(dk)+' launches a long clearance and '+dn+' can breathe.',N(dk)+' takes the high ball under pressure and clears.'],function(){ bump(M,dk,0.1); });
+        ev([N(dbk)+' misses a tackle but the '+dn+' cover scrambles back.',N(dbk)+' is beaten on the outside but help arrives just in time.',N(dbk)+' slips off a tackle and '+dn+' are lucky to survive.'],function(){ bump(M,dbk,-0.3); }); }
+      if(ra.scrum>rd.scrum+3) ev([an+' win a scrum against the head.','The '+an+' scrum marches forward. Penalty against the '+dn+' front row.',(lp?lp.n+' has his opposite number in all sorts of trouble at the scrum.':an+' are dominant at the scrum.'),'The '+dn+' scrum is going backwards faster than it went forwards.'],function(){ unit(G,M,a,[0,1,2],0.2); unit(G,M,d,[0,1,2],-0.2); }); else ev(['Scrum reset. The referee has a word with both front rows.','The scrum goes down again. The referee is losing patience.','Solid scrum, and the ball is away.'],function(){});
+      if(ra.line>rd.line) ev([an+' take clean lineout ball and set the maul.',(hk2?hk2.n+' hits his jumper at the tail and '+an+' are away.':an+' win the lineout at the tail.'),an+' win it at the front and drive.'],function(){ unit(G,M,a,[1,3,4],0.1); }); else ev([dn+' disrupt the '+an+' lineout.','Not straight! The '+an+' throw is penalised.',dn+' read the call and pinch the lineout.','Daylight robbery at the lineout. '+dn+' have it.'],function(){ unit(G,M,d,[3,4],0.2); bump(M,onPitch(G,M,a,1),-0.2); });
+      ev([an+' go through the phases in the '+dn+' 22.',an+' keep it tight, phase after phase, but '+dn+' are holding.','Twelve phases from '+an+' and still '+dn+' will not crack.',an+' are camped on the '+dn+' line.'],function(){ unit(G,M,a,FW,0.03); });
+      var e=pick(R,L); e[1](); say(M,m,'info',a,tpick(M,e[0]));
     }
   }
-  if(m===40){ M.ht=[M.sides[0].score,M.sides[1].score]; say(M,m,'ht',-1,'Half-time: '+score(M)); }
+  var S0=M.sides[0], S1=M.sides[1], df=S0.score-S1.score, evt=(S0.ev+S1.ev)||1, dom=S0.ev>=S1.ev?0:1, pct=Math.round(M.sides[dom].ev/evt*100), ldr=df>0?0:1;
+  if(m===20||m===60) say(M,m,'info',-1,(m===20?'Twenty minutes gone':'Into the final quarter')+': '+(df?cnm(M,ldr)+' lead by '+Math.abs(df):'nothing between the sides')+'. '+(pct>=55?cnm(M,dom)+' have had '+pct+'% of the attacking ball.':'Possession has been evenly shared.'));
+  if(m===70 && Math.abs(df)<=7) say(M,m,'info',-1,df?'Ten minutes left and there is one score in it.':'Ten minutes left and the sides cannot be separated.');
+  if(m===78 && df && Math.abs(df)<=7) say(M,m,'info',-1,'Two minutes left. '+cnm(M,1-ldr)+' need a score.');
+  if(m===72 && df<=-21 && !M.neutral) say(M,m,'info',-1,'Some of the home crowd are heading for the exits.');
+  if(m===40){ M.ht=[S0.score,S1.score]; say(M,m,'info',-1,'Tries: '+cnm(M,0)+' '+S0.tries+', '+cnm(M,1)+' '+S1.tries+'. Scrums won on own ball: '+S0.scW+' of '+(S0.scW+S0.scL)+' and '+S1.scW+' of '+(S1.scW+S1.scL)+'. '+(Math.abs(df)<=7?tpick(M,['All to play for in the second half.','There is nothing in this.','The next score could be crucial.']):cnm(M,ldr)+tpick(M,[' are well on top.',' have been the better side by a distance.',' will be delighted with that half.']))); say(M,m,'ht',-1,'Half-time: '+score(M)); }
   var end = M.et?100:80;
   if(m>=end){
     var s0=M.sides[0].score, s1=M.sides[1].score;
     if(M.ko && s0===s1 && !M.et){ M.et=true; say(M,m,'ht',-1,'Level after 80 minutes. Extra time will be played.'); return; }
     if(M.ko && s0===s1){ M.pk = M.sides[0].tries!==M.sides[1].tries ? (M.sides[0].tries>M.sides[1].tries?0:1) : (R()<0.5?0:1); say(M,m,'info',-1,'Still level. '+club(M.sides[M.pk].club).name+' go through '+(M.sides[0].tries!==M.sides[1].tries?'on tries scored.':'after a place-kicking competition.')); }
-    M.done=true; say(M,m,'ft',-1,'Full-time: '+score(M)); rateMatch(G,M);
+    M.done=true; rateMatch(G,M);
+    var mom=null; Object.keys(M.pr).forEach(function(id){ var r=M.pr[id]; if(r.mins>=40 && (!mom||r.r>M.pr[mom].r)) mom=id; });
+    if(mom!=null) say(M,m,'info',M.team[mom],'Man of the match: '+G.players[mom].n+' ('+cnm(M,M.team[mom])+'), rated '+M.pr[mom].r.toFixed(1)+'.');
+    if(M.stage==='league' && s0!==s1){ var ls=s0>s1?1:0; if(Math.abs(s0-s1)<=7) say(M,m,'info',ls,cnm(M,ls)+' take a losing bonus point.'); }
+    say(M,m,'ft',-1,'Full-time: '+score(M));
   }
 }
 function rateMatch(G,M){
@@ -1560,7 +1610,7 @@ function matchScreen() {
   var half = M.min === 40 && MT.paused && !MT.resumed40, ev = s0.ev + s1.ev || 1;
   var stat = function (k, a, b) { return '<tr><td class="n hi">' + a + '</td><td class="c dim">' + k + '</td><td class="hi">' + b + '</td></tr>'; };
   var h = '<section class="board"><div class="bd"><span class="tn" style="--k:' + club(M.h).c1 + '">' + club(M.h).name + '</span><span class="bs">' + s0.score + '</span><span class="clock">' + (M.done ? 'FT' : half ? 'HT' : M.min + "'") + '</span><span class="bs">' + s1.score + '</span><span class="tn" style="--k:' + club(M.a).c1 + '">' + club(M.a).name + '</span></div><p class="ticker k-' + last.k + '">' + esc(last.t) + '</p></section>';
-  h += '<p class="row ctl">' + (M.done ? btn('Continue', 'fulltime', '', 'go') : btn(half ? 'Start second half' : MT.paused ? 'Resume' : 'Pause', 'pause', '', MT.paused ? 'go' : '') + btn(MT.fast ? 'Speed: fast' : 'Speed: normal', 'speed') + btn('Skip to the end', 'skip') + btn(MT.panel ? 'Hide team' : 'Team and tactics', 'mpanel')) + '</p>';
+  h += '<p class="row ctl">' + (M.done ? btn('Continue', 'fulltime', '', 'go') : btn(half ? 'Start second half' : MT.paused ? 'Resume' : 'Pause', 'pause', '', MT.paused ? 'go' : '') + btn(MT.fast ? 'Speed: fast' : 'Speed: normal', 'speed') + btn('Skip to the end', 'skip') + (window.speechSynthesis ? btn(voiceOn() ? 'Voice: on' : 'Voice: off', 'voice') : '') + btn(MT.panel ? 'Hide team' : 'Team and tactics', 'mpanel')) + '</p>';
   if (MT.panel && !M.done) {
     var canSub = MT.paused && me.bench.length && me.subs < 8;
     var rows = function (sd, mine) { return sd.xv.map(function (id, i) { if (id == null) return '<tr class="off"><td class="n">' + (i + 1) + '</td><td colspan="5">Off the field</td></tr>'; var p = G.players[id], r = M.pr[id], bin = sd.bin.some(function (b) { return b.slot === i; }), c = Math.round(M.cond[id]), act = mine && canSub && !bin;
@@ -1574,7 +1624,10 @@ function matchScreen() {
     panel('Match stats', '<div class="scroll"><table class="ms"><tbody>' + stat('Tries', s0.tries, s1.tries) + stat('Conversions', s0.cons, s1.cons) + stat('Penalty goals', s0.pens, s1.pens) + stat('Drop goals', s0.dgs, s1.dgs) + stat('Scrums won on own ball', s0.scW + '/' + (s0.scW + s0.scL), s1.scW + '/' + (s1.scW + s1.scL)) + stat('Lineouts won on own throw', s0.loW + '/' + (s0.loW + s0.loL), s1.loW + '/' + (s1.loW + s1.loL)) + stat('Attacking share', Math.round(s0.ev / ev * 100) + '%', Math.round(s1.ev / ev * 100) + '%') + stat('Yellow cards', s0.yc, s1.yc) + stat('Red cards', s0.rc, s1.rc) + '</tbody></table></div>') + '</div>';
   return h;
 }
-function tick() { if (!MT || MT.paused || MT.M.done) return; E.stepMinute(G, MT.M); if (MT.M.min === 40 && !MT.M.done) { MT.paused = true; MT.resumed40 = false; } if (MT.M.done) stopTimer(); render(); }
+function voiceOn() { if (UI.voice === undefined) { try { UI.voice = localStorage.getItem(KEY + '-voice') === '1'; } catch (e) { UI.voice = false; } } return UI.voice; }
+function sayAloud(t) { try { var u = new SpeechSynthesisUtterance(t), all = speechSynthesis.getVoices(), vs = all.filter(function (v) { return /en[-_]GB/i.test(v.lang); }), pv = all.filter(function (v) { return /scot|fiona/i.test(v.name + ' ' + v.lang); })[0] || vs.filter(function (v) { return /daniel|male|arthur|oliver/i.test(v.name); })[0] || vs[0]; if (pv) u.voice = pv; u.lang = 'en-GB'; u.rate = 1.05; speechSynthesis.speak(u); } catch (e) {} }
+function speakNew() { if (!MT || !voiceOn() || !window.speechSynthesis) return; var L = MT.M.log; if (MT.sp == null) MT.sp = 0; for (; MT.sp < L.length; MT.sp++) { var l = L[MT.sp]; if (l.k === 'info' && (MT.fast || speechSynthesis.pending)) continue; sayAloud(l.t.replace(/\(([^()]+) (\d+)-(\d+) ([^()]+)\)/, '$1 $2, $4 $3.')); } }
+function tick() { if (!MT || MT.paused || MT.M.done) return; E.stepMinute(G, MT.M); speakNew(); if (MT.M.min === 40 && !MT.M.done) { MT.paused = true; MT.resumed40 = false; } if (MT.M.done) stopTimer(); render(); }
 function startTimer() { stopTimer(); MT.timer = setInterval(tick, MT.fast ? 220 : 750); }
 function stopTimer() { if (MT && MT.timer) { clearInterval(MT.timer); MT.timer = null; } }
 function finishRound(f, M) {
@@ -1613,7 +1666,8 @@ var A = {
   instant: function () { var f = E.userFixture(G); finishRound(f, E.playOut(G, E.matchFor(G, f))); },
   pause: function () { MT.paused = !MT.paused; if (!MT.paused) MT.resumed40 = true; },
   speed: function () { MT.fast = !MT.fast; startTimer(); },
-  skip: function () { stopTimer(); MT.M.sides[MT.u].auto = true; E.playOut(G, MT.M); },
+  voice: function () { UI.voice = !voiceOn(); try { localStorage.setItem(KEY + '-voice', UI.voice ? '1' : '0'); } catch (e) {} if (window.speechSynthesis) { speechSynthesis.cancel(); if (UI.voice) { if (MT) MT.sp = MT.M.log.length; sayAloud('Commentary on.'); } } },
+  skip: function () { stopTimer(); if (window.speechSynthesis) speechSynthesis.cancel(); if (MT) MT.sp = 1e9; MT.M.sides[MT.u].auto = true; E.playOut(G, MT.M); },
   mpanel: function () { MT.panel = !MT.panel; },
   subpick: function (d) { UI.modal = {t: 'sub', i: +d.id}; },
   dosub: function (d) { E.doSub(G, MT.M, MT.u, UI.modal.i, +d.id, false); UI.modal = null; },
