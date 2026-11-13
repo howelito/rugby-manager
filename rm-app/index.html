@@ -480,7 +480,20 @@ var POS = ['LP','HK','TP','LK','BR','SH','FH','CE','WG','FB'];
 var POSN = {LP:'Loosehead prop',HK:'Hooker',TP:'Tighthead prop',LK:'Lock',BR:'Back row',SH:'Scrum-half',FH:'Fly-half',CE:'Centre',WG:'Wing',FB:'Full-back'};
 var SLOTS = ['LP','HK','TP','LK','LK','BR','BR','BR','SH','FH','WG','CE','CE','WG','FB','HK','LP','TP','LK','BR','SH','FH','WG'];
 var ATTR = ['Sc','Li','Ta','Ca','Bd','Pa','Ha','Ki','Pc','St','Di','Gk'];
-var ATTRN = {Sc:'Scrummaging',Li:'Lineout',Ta:'Tackling',Ca:'Carrying',Bd:'Breakdown',Pa:'Passing',Ha:'Handling',Ki:'Kicking',Pc:'Pace',St:'Stamina',Di:'Discipline',Gk:'Goal kicking'};
+var ATTRN = {Sc:'Scrummaging',Li:'Lineout',Ta:'Tackling',Ca:'Carrying',Bd:'Breakdown',Pa:'Passing',Ha:'Handling',Ki:'Kicking',Pc:'Pace',St:'Stamina',Di:'Discipline',Gk:'Goal kicking',Sg:'Strength',Ag:'Agility',Wr:'Work rate',De:'Decisions',Po:'Positioning',Fl:'Flair',Ax:'Aggression',Le:'Leadership',Br:'Bravery'};
+// Second set of attributes: physical and mental. The last four are character and cannot be trained.
+var ATTR2 = ['Sg','Ag','Wr','De','Po','Fl','Ax','Le','Br'], ATALL = ATTR.concat(ATTR2), ATTRAIN = ATTR.concat(['Sg','Ag','Wr','De','Po']);
+var PROF2 = {
+ LP:[1,.2,.7,.5,.6,.2,.8,.6,.9], HK:[.9,.4,.8,.7,.6,.3,.8,.7,.9], TP:[1,.2,.7,.5,.6,.2,.8,.6,.9],
+ LK:[.9,.3,.9,.6,.7,.3,.8,.7,.9], BR:[.8,.6,1,.7,.8,.5,.9,.7,1],
+ SH:[.4,.9,.8,1,.7,.8,.5,.8,.7], FH:[.4,.8,.7,1,.8,.9,.4,.8,.6], CE:[.7,.8,.8,.8,.9,.8,.6,.7,.8],
+ WG:[.5,1,.7,.7,.8,.9,.4,.5,.7], FB:[.5,.9,.7,.9,1,.8,.4,.7,.8]};
+function hrng(n){ var x=(n*2654435761)>>>0; return function(){ x=(x+0x6D2B79F5)|0; var t=x; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+function setAt2(p){ var w=PROF2[p.pos], R=hrng(p.id*131+p.n.length*17+p.n.charCodeAt(0)), h=p.hid||{};
+  ATTR2.forEach(function(k,i){ if(p.at[k]!=null) return; var sp=i>=5?6:3, v=p.ca/5*(0.42+0.62*w[i])+(R()-0.5)*sp;
+    if(k==='Le') v+=(p.age-26)*0.3; if(k==='Ax') v+=((h.Drt||9)-9)*0.35; if(k==='De') v+=(p.age-26)*0.1; if(k==='Ag' && p.age>=31) v-=(p.age-30)*0.4;
+    p.at[k]=clamp(Math.round(v),1,20); });
+  if(p.show && p.show.at) ATTR2.forEach(function(k,i){ if(p.show.at[k]==null) p.show.at[k]=clamp(Math.round(p.show.ca/5*(0.42+0.62*w[i])),1,20); }); }
 var PROF = {
  LP:[1,.3,.7,.7,.6,.3,.4,.1,.3,.6,.6,0], HK:[.9,1,.7,.7,.7,.4,.5,.1,.4,.7,.6,0], TP:[1,.3,.7,.6,.6,.3,.4,.1,.2,.6,.6,0],
  LK:[.7,1,.8,.7,.7,.4,.6,.1,.4,.8,.6,0], BR:[.5,.6,1,.9,1,.5,.6,.2,.6,.9,.6,0],
@@ -513,7 +526,7 @@ function club(id){ var i; if(PSEUDO[id]) return PSEUDO[id]; if(isNat(id)){ if(!N
 function addLegends(G,R){ var have={}; G.players.forEach(function(p){ have[p.n]=1; }); LEGENDS.forEach(function(s,i){ var a=s.split('|'); if(have[a[0]]) return; var p=addPlayer(G,R,{n:a[0],pos:a[1],ca:+a[2],age:27+i%3,club:'LEG',pa:+a[2]}); p.leg=a[3]; p.nat=natOf(p.n,'LEG',a[3]); p.hid.Con=Math.max(p.hid.Con,14); p.hid.Big=Math.max(p.hid.Big,14); p.contract=YEAR+3;
     if(p.n==='Matt Dawson'){ p.at.Pa=20; p.at.Ha=20; p.at.Ki=19; p.at.Pc=18; p.at.Ta=17; p.at.St=19; p.at.Di=17; p.at.Gk=17; p.hid.Con=20; p.hid.Big=20; p.hid.Inj=2; p.hid.Drt=4; bargain(p); } }); G.leg=1;
   G.players.forEach(function(p){ if(p.n==='Matt Dawson' && p.leg){ if(!p.show) bargain(p); p.show.ca=82; if((G.year||2026)===2026 && p.ca!==92){ p.ca=92; p.pa=92; } } }); }
-function bargain(p){ var w=PROF[p.pos]; p.show={ca:82,at:{}}; ATTR.forEach(function(k,i){ p.show.at[k]=clamp(Math.round(16*(0.42+0.62*w[i])),1,20); }); p.fix=400000; if(p.club==='LEG') p.wage=baseWage(p); }
+function bargain(p){ var w=PROF[p.pos]; p.show={ca:82,at:{}}; ATTR.forEach(function(k,i){ p.show.at[k]=clamp(Math.round(16*(0.42+0.62*w[i])),1,20); }); setAt2(p); p.fix=400000; if(p.club==='LEG') p.wage=baseWage(p); }
 function abroad(id){ id=String(id); return id.charAt(0)==='F' && id.charAt(1)==='-'; }
 function isNat(id){ id=String(id); return id.charAt(0)==='N' && id.charAt(1)==='-'; }
 function addForeign(G,R){ var have={}; G.players.forEach(function(p){ have[p.n]=1; }); FOREIGN.forEach(function(c){ c.pl.forEach(function(s){ var a=s.split('|'); if(!have[a[0]]) addPlayer(G,R,{n:a[0],pos:a[1],ca:+a[2],age:+a[3],club:c.id}); }); }); G.intl=1; }
@@ -530,7 +543,7 @@ function applySquads(G,R,fresh){
       if(!p){ if(!a[1]) return; var cid=(a[4]&&a[4]!=='-'&&club(a[4]))?a[4]:pool;
         p=addPlayer(G,R,{n:a[0],pos:a[1],age:born?Math.max(18,G.year-born):26,ca:clamp(f==null?Math.round(tg-5):f-(caps===0?1:0),50,95),club:cid,nat:code}); by[nrm(a[0])]=p; }
       else if(fresh){
-        if(f!=null && p.ca<f-2){ var o=p.ca; p.ca=f-2; ATTR.forEach(function(k){ p.at[k]=clamp(Math.round(p.at[k]*p.ca/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; if(p.club.indexOf('F-')===0) p.wage=baseWage(p); }
+        if(f!=null && p.ca<f-2){ var o=p.ca; p.ca=f-2; ATALL.forEach(function(k){ p.at[k]=clamp(Math.round(p.at[k]*p.ca/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; if(p.club.indexOf('F-')===0) p.wage=baseWage(p); }
         if(born) p.age=Math.max(18,G.year-born);
         if(newer.indexOf(code)>=0 && a[4] && a[4].indexOf('F-')===0 && p.club.indexOf('F-')===0 && p.club!==a[4] && club(a[4])) p.club=a[4]; }
       if(p.club==='RET') return;
@@ -545,7 +558,7 @@ function applyHonours(G,R,fresh){
   if(typeof HONOURS==='undefined') return; honoursOf('');
   var by={}; G.players.forEach(function(p){ if(!p.leg && !by[nrm(p.n)]) by[nrm(p.n)]=p; });
   HONOURS.add.forEach(function(s){ var a=s.split('|'); if(by[nrm(a[0])] || !club(a[2])) return; by[nrm(a[0])]=addPlayer(G,R,{n:a[0],pos:a[1],age:27,ca:Math.max(78,honourFloor(a[0])),club:a[2]}); });
-  if(fresh) Object.keys(HONMAP).forEach(function(k){ var p=by[k]; if(!p) return; var f=honourFloor(p.n); if(f) f=Math.min(f,Math.max(p.ca+3,84)); if(f && p.ca<f){ var o=p.ca; p.ca=f; ATTR.forEach(function(x){ p.at[x]=clamp(Math.round(p.at[x]*p.ca/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; if(p.club.indexOf('F-')===0) p.wage=baseWage(p); } });
+  if(fresh) Object.keys(HONMAP).forEach(function(k){ var p=by[k]; if(!p) return; var f=honourFloor(p.n); if(f) f=Math.min(f,Math.max(p.ca+3,84)); if(f && p.ca<f){ var o=p.ca; p.ca=f; ATALL.forEach(function(x){ p.at[x]=clamp(Math.round(p.at[x]*p.ca/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; if(p.club.indexOf('F-')===0) p.wage=baseWage(p); } });
   G.honv=HONOURS.asof;
 }
 function squad(G,cid){ if(isNat(cid)) return ((G.wc&&G.wc.sq[cid])||[]).map(function(id){ return G.players[id]; }); return G.players.filter(function(p){ return p.club===cid; }); }
@@ -562,7 +575,7 @@ function addPlayer(G,R,o){
   ATTR.forEach(function(k,i){ p.at[k] = clamp(Math.round(o.ca/5*(0.42+0.62*w[i]) + (R()-0.5)*3),1,20); });
   if(o.pos==='FH'||o.pos==='FB'||o.pos==='SH'||o.pos==='CE') p.at.Gk = clamp(Math.round(p.at.Gk + (R()-0.5)*4),1,20);
   p.nat = o.nat || natOf(o.n,o.club,null);
-  p.hid = mkHid(R,o.ca); p.morale = 60; p.pa = o.pa || mkPa(R,o.ca,o.age); p.car = {apps:0,tries:0,pts:0}; p.contract = YEAR+1+Math.floor(R()*3);
+  p.hid = mkHid(R,o.ca); setAt2(p); p.morale = 60; p.pa = o.pa || mkPa(R,o.ca,o.age); p.car = {apps:0,tries:0,pts:0}; p.contract = YEAR+1+Math.floor(R()*3);
   p.wage = baseWage(p); G.players.push(p); return p;
 }
 function genYouth(G,R,cid,pos){ var y=genYouth0(G,R,cid,pos); if(y && G.clubs[cid] && cid.indexOf('F-')!==0) y.hg=cid; return y; }
@@ -599,17 +612,18 @@ function selProblems(G,cid,sel){
 function xvStrength(G,cid){ var s=pickXV(G,cid),t=0,n=0; for(var i=0;i<15;i++) if(s[i]!=null){ t+=G.players[s[i]].ca; n++; } return n?t/n:0; }
 
 function defaultTac(){ return {style:'bal',ment:'bal',kickg:'bal',pens:'mix',def:'bal',tackle:'norm',ruck:'bal',lineout:'mix',tempo:'norm',kicker:null,captain:null,autoSubs:true}; }
-var DATAV='2026-11-13a';
+var DATAV='2026-11-13c';
 // Rating and age corrections reach a saved career only in its first season, before players have developed.
 function applyData(G){
   var base={}; CLUBS.forEach(function(c){ Object.keys(c.squad).forEach(function(k){ c.squad[k].forEach(function(e){ var a=e.split('|'); base[nrm(a[0])]=[+a[1],+a[2]]; }); }); });
   FOREIGN.forEach(function(c){ c.pl.forEach(function(e){ var a=e.split('|'); if(!base[nrm(a[0])]) base[nrm(a[0])]=[+a[2],+a[3]]; }); });
   G.players.forEach(function(p){ if(p.leg || p.acad || p.club==='RET' || p.club==='LEG') return; var b=base[nrm(p.n)]; if(!b) return;
     var hon=honoursOf(p.n).length, f=honourFloor(p.n); if(f) f=Math.min(f,Math.max(b[0]+3,84)); var t=Math.max(b[0],f||0);
-    if(t>p.ca || (t<p.ca && !p.sq)){ var o=p.ca; p.ca=t; ATTR.forEach(function(x){ p.at[x]=clamp(Math.round(p.at[x]*t/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; }
+    if(t>p.ca || (t<p.ca && !p.sq)){ var o=p.ca; p.ca=t; ATALL.forEach(function(x){ if(p.at[x]!=null) p.at[x]=clamp(Math.round(p.at[x]*t/o),1,20); }); if(p.pa<p.ca) p.pa=p.ca; }
     if(!p.sq && b[1] && Math.abs(p.age-b[1])>1) p.age=b[1]; });
 }
-function migrate(G){ var R=rng(G), d=defaultTac(); if(!G.hgv){ try{ markHG(G); }catch(e){ elog(G,e); } } if(!G.epsv){ try{ markEPS(G); }catch(e){ elog(G,e); } } if(!G.finHist) G.finHist=[]; if(G.rulesv!==RULESV){ G.rulesv=RULESV; news(G,'The game has been updated','This save was started under older rules. New since then: fan bases and ticket prices, owner funding, a separate transfer budget, the real salary cap, staff, loans, a shortlist, counter-offers, players who speak up when unhappy, awards and records. Your save carries on, but existing wages and balances were set the old way. A new game is the fairest test.'); } if(G.datav!==DATAV){ if((G.year||2026)===2026 && G.phase!=='wc'){ try{ applyData(G); }catch(e){ elog(G,e); } } G.datav=DATAV; } if(!G.year) G.year=2026; YEAR=G.year; if(!G.hist) G.hist=[]; if(!G.scouted) G.scouted={}; if(!G.scoutQ) G.scoutQ=[]; if(G.conf==null) G.conf=60; addForeign(G,R); if(typeof SQUADS!=='undefined' && G.sqv!==SQUADS.asof && G.phase!=='wc') applySquads(G,R,false); if(typeof HONOURS!=='undefined' && G.honv!==HONOURS.asof && G.phase!=='wc') applyHonours(G,R,false); addLegends(G,R); G.players.forEach(function(p){ if(!p.hid) p.hid=mkHid(R,p.ca); if(p.morale==null) p.morale=60; if(!p.pa) p.pa=mkPa(R,p.ca,p.age); if(!p.nat) p.nat=natOf(p.n,p.club,p.leg); if(!p.car) p.car={apps:0,tries:0,pts:0}; });
+function migrate(G){ var R=rng(G), d=defaultTac(); G.players.forEach(function(p){ if(p.at && p.at.Sg==null) setAt2(p); }); if(!G.hgv){ try{ markHG(G); }catch(e){ elog(G,e); } } if(!G.epsv){ try{ markEPS(G); }catch(e){ elog(G,e); } } if(!G.finHist) G.finHist=[]; if(G.rulesv===15 && !isNat(G.user) && !(G.hist&&G.hist.length) && G.phase==='league'){ try{ var hu=G.clubs[G.user], hci=capInfo(G,G.user); tbOf(G); hu.tbud+=600000; if(hci.counted>hci.limit*0.92){ var hf=hci.limit*0.91/hci.counted; squad(G,G.user).forEach(function(p){ p.wage=Math.round(p.wage*hf/1000)*1000; }); } news(G,'More room to build','The board has added '+money(600000)+' to your transfer budget and restructured the squad\'s contracts, so you now have '+money(capInfo(G,G.user).limit-capInfo(G,G.user).counted)+' of salary cap room to bring players in.'); }catch(e){ elog(G,e); } G.rulesv=RULESV; }
+  if(G.rulesv!==RULESV){ G.rulesv=RULESV; news(G,'The game has been updated','This save was started under older rules. New since then: fan bases and ticket prices, owner funding, a separate transfer budget, the real salary cap, staff, loans, a shortlist, counter-offers, players who speak up when unhappy, awards and records. Your save carries on, but existing wages and balances were set the old way. A new game is the fairest test.'); } if(G.datav!==DATAV){ if((G.year||2026)===2026 && G.phase!=='wc'){ try{ applyData(G); }catch(e){ elog(G,e); } } G.datav=DATAV; } if(!G.year) G.year=2026; YEAR=G.year; if(!G.hist) G.hist=[]; if(!G.scouted) G.scouted={}; if(!G.scoutQ) G.scoutQ=[]; if(G.conf==null) G.conf=60; addForeign(G,R); if(typeof SQUADS!=='undefined' && G.sqv!==SQUADS.asof && G.phase!=='wc') applySquads(G,R,false); if(typeof HONOURS!=='undefined' && G.honv!==HONOURS.asof && G.phase!=='wc') applyHonours(G,R,false); addLegends(G,R); G.players.forEach(function(p){ if(!p.hid) p.hid=mkHid(R,p.ca); if(p.morale==null) p.morale=60; if(!p.pa) p.pa=mkPa(R,p.ca,p.age); if(!p.nat) p.nat=natOf(p.n,p.club,p.leg); if(!p.car) p.car={apps:0,tries:0,pts:0}; });
   natOf('','FA',null); G.players.forEach(function(p){ if(NATMAP[p.n] && !p.sq && !p.leg && p.nat!==NATMAP[p.n]) p.nat=NATMAP[p.n]; });
   Object.keys(G.clubs).forEach(function(k){ var t=G.clubs[k].tac; Object.keys(d).forEach(function(f){ if(t[f]===undefined) t[f]=d[f]; }); }); return G; }
 
@@ -624,7 +638,7 @@ function newGame(userClub, mgr, seed){
   addForeign(G,R); applySquads(G,R,true); applyHonours(G,R,true); markHG(G); markEPS(G); G.rulesv=RULESV; G.players.forEach(function(p){ p.c0=p.ca; });
   CLUBS.forEach(function(c){
     ensureDepth(G,R,c.id,false);
-    capFit(G,c.id,0.97);
+    capFit(G,c.id,0.91);
   });
   addLegends(G,R);
   setExpectations(G,R,true); listFringe(G,R); makeFixtures(G,R);
@@ -646,7 +660,7 @@ function makeFixtures(G,R){
   var ids = CLUBS.map(function(c){ return c.id; });
   for(var i=ids.length-1;i>0;i--){ var j=Math.floor(R()*(i+1)); var t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
   var n=ids.length, half=[];
-  for(var r=0;r<n-1;r++){ var rd=[]; for(var k=0;k<n/2;k++){ var a=ids[k], b=ids[n-1-k]; rd.push((r+k)%2 ? {h:b,a:a,res:null} : {h:a,a:b,res:null}); } half.push(rd); ids.splice(1,0,ids.pop()); }
+  for(var r=0;r<n-1;r++){ var rd=[]; for(var k=0;k<n/2;k++){ var a=ids[k], b=ids[n-1-k]; var hm=k===0?(r%2===0):(k%2===1); rd.push(hm ? {h:a,a:b,res:null} : {h:b,a:a,res:null}); } half.push(rd); ids.splice(1,0,ids.pop()); }
   G.fix = half.concat(half.map(function(rd){ return rd.map(function(f){ return {h:f.a,a:f.h,res:null}; }); }));
 }
 function money(v){ var s=v<0?'-':''; v=Math.abs(v); return s+'£'+(v>=1e6?(v/1e6).toFixed(2)+'m':v>=1000?Math.round(v/1000)+'k':v); }
@@ -684,17 +698,67 @@ function newMatch(G,hid,aid,opt){
 function say(M,m,k,s,t){ M.log.push({m:m,k:k,s:s,t:t}); }
 function onPitch(G,M,si,i){ var s=M.sides[si], id=s.xv[i]; if(id==null) return null; for(var b=0;b<s.bin.length;b++) if(s.bin[b].slot===i) return null; return G.players[id]; }
 function sideRat(G,M,si){
-  var A=function(i,k){ var p=onPitch(G,M,si,i); return p ? p.at[k]*fam(p,SLOTS[i])*condF(M.cond[p.id])*formF(p)*moraleF(p)*M.day[p.id] : 0; };
+  var A=function(i,k){ var p=onPitch(G,M,si,i); return p ? (p.at[k]||10)*fam(p,SLOTS[i])*condF(M.cond[p.id])*formF(p)*moraleF(p)*M.day[p.id] : 0; };
   var sum=function(idx,k){ var t=0; for(var j=0;j<idx.length;j++) t+=A(idx[j],k); return t; };
   var F=[0,1,2,3,4,5,6,7], B=[8,9,10,11,12,13,14], ALL=F.concat(B);
-  return {
-    scrum:(sum([0,1,2],'Sc')*3+sum([3,4],'Sc')*1.5+sum([5,6,7],'Sc')*0.67)/14*5,
+  var r={
+    scrum:((sum([0,1,2],'Sc')*3+sum([3,4],'Sc')*1.5+sum([5,6,7],'Sc')*0.67)/14*0.85+sum([0,1,2,3,4],'Sg')/5*0.15)*5,
     line:(A(1,'Li')*3+sum([3,4],'Li')*2+sum([5,6,7],'Li'))/10*5,
-    bd:(sum([5,6,7],'Bd')*2+sum([0,1,2,3,4],'Bd')+sum([11,12],'Bd')*0.5)/12*5,
-    fwd:(sum(F,'Ca')+sum(F,'St')*0.5)/12*5,
-    back:(sum([8,9],'Pa')*1.5+sum([10,11,12,13,14],'Pa')*0.6+sum(B,'Ha')+sum([10,13,14],'Pc')*1.4+sum([11,12],'Ca')*1.3+A(9,'Ki')*0.8)/20.6*5,
-    def:sum(ALL,'Ta')/15*5, kick:(A(8,'Ki')+A(9,'Ki')*2+A(14,'Ki'))/4*5, disc:sum(ALL,'Di')/15*5 };
+    bd:((sum([5,6,7],'Bd')*2+sum([0,1,2,3,4],'Bd')+sum([11,12],'Bd')*0.5)/12*0.75+(sum(F,'Wr')+sum(F,'Ax')+sum(F,'Br'))/24*0.25)*5,
+    fwd:((sum(F,'Ca')+sum(F,'St')*0.5)/12*0.8+sum(F,'Sg')/8*0.2)*5+RB.fwd,
+    back:((sum([8,9],'Pa')*1.5+sum([10,11,12,13,14],'Pa')*0.6+sum(B,'Ha')+sum([10,13,14],'Pc')*1.4+sum([11,12],'Ca')*1.3+A(9,'Ki')*0.8)/20.6*0.75+(sum([8,9],'De')*1.5+sum([10,11,12,13,14],'Ag')+sum([9,10,11,12,13,14],'Fl'))/14*0.25)*5+RB.back,
+    defF:(sum(F,'Ta')*0.7+sum(F,'Br')*0.15+sum(F,'Wr')*0.15)/8*5+RB.defF,
+    defB:(sum(B,'Ta')*0.6+sum(B,'Po')*0.4)/7*5+RB.defB,
+    kick:((A(8,'Ki')+A(9,'Ki')*2+A(14,'Ki'))/4*0.85+A(9,'De')*0.15)*5,
+    play:(A(8,'De')+A(9,'De')+A(8,'Pa')+A(9,'Pa'))/4*5,
+    stam:sum(ALL,'St')/15*5,
+    disc:sum(ALL,'Di')/15*5-(sum(ALL,"Ax")/15-13)*1.2 };
+  r.def=(r.defF*8+r.defB*7)/15; return r;
 }
+// Offsets that put forward and back attack on the same scale against forward and back defence across the league.
+var RB={fwd:5.3,back:-4.4,defF:0,defB:0}, PLAYAV=88;
+var KEYSK=[['Sc','Sg','Ta','Ca'],['Li','Sc','Sg','Bd'],['Sc','Sg','Ta','Ca'],['Li','Sc','Ca','Wr'],['Li','Sc','Ca','Wr'],['Bd','Ta','Ca','Wr'],['Bd','Ta','Ca','Wr'],['Bd','Ta','Ca','Br'],['Pa','De','Ki','Ha'],['Ki','Pa','De','Gk'],['Pc','Ag','Fl','Ha'],['Ca','Ta','Pa','Po'],['Ca','Ta','Pa','Po'],['Pc','Ag','Fl','Ha'],['Ki','Pc','Po','Ha']];
+function keySkills(i){ var b=[0,1,2,3,5,8,9,10]; return KEYSK[i<15?i:b[i-15]]; }
+function nowOf(p,slot){ return Math.round(effSlot(p,slot)); }
+function userSel(G){ var c=G.clubs[G.user]; return c.sel && !selProblems(G,G.user,c.sel).length ? c.sel : pickXV(G,G.user); }
+// Analysts' report: your team against the opponent's likely team, unit by unit, with advice on tactics.
+function oppReport(G,opp,wx){
+  var ms=userSel(G), os=pickXV(G,opp), m=preRat(G,G.user,ms), o=preRat(G,opp,os), t=G.clubs[opp].tac||{}, tips=[], on=club(opp).name;
+  var gk=function(sel,tac){ var b=null; sel.slice(0,15).forEach(function(id){ if(id==null) return; var p=G.players[id]; if(tac&&tac.kicker===id) b=p; else if(!(tac&&tac.kicker!=null&&b&&b.id===tac.kicker) && (!b||p.at.Gk>b.at.Gk)) b=p; }); return b; }, ok=gk(os,null), mk=gk(ms,G.clubs[G.user].tac);
+  var rows=[['Scrum',m.scrum,o.scrum],['Lineout',m.line,o.line],['Breakdown',m.bd,o.bd],['Forward attack',m.fwd,o.fwd],['Back attack',m.back,o.back],['Forward defence',m.defF,o.defF],['Back defence',m.defB,o.defB],['Kicking game',m.kick,o.kick],['Half-backs',m.play,o.play],['Fitness',m.stam,o.stam],['Discipline',m.disc,o.disc]];
+  var gf=m.fwd-o.defF, gb=m.back-o.defB;
+  if(gb-gf>=4) tips.push('They are easier to break out wide than up front. Run it wide.'); else if(gf-gb>=4) tips.push('Their pack can be bullied but their backs defend well. Keep it tight.'); else tips.push('No obvious soft spot in their defence. A balanced attack is fine.');
+  if(m.kick-o.kick>=4) tips.push('You have the better kickers. Kicking for territory will pin them back.'); else if(o.kick-m.kick>=4) tips.push('Their kickers are better than yours. Do not get into a kicking contest: keep ball in hand or stay balanced.');
+  if(m.line-o.line>=4 && m.fwd-(o.defF+o.scrum)/2>=-1) tips.push('Your lineout and maul should be on top. Kicking penalties to the corner is worth it.'); else if(o.line-m.line>=5) tips.push('They will attack your lineout. Take the points at goal and call safe ball.');
+  if(ok && ok.at.Gk>=16) tips.push(ok.n+' kicks goals from everywhere (goal kicking '+ok.at.Gk+'). Avoid a blitz, hard tackling and contesting everything, which all give away penalties.'); else if(ok && ok.at.Gk<=11) tips.push('They have no reliable goal kicker ('+ok.n+', '+ok.at.Gk+'). You can afford to be aggressive in defence and at the breakdown.');
+  if(o.play<=PLAYAV-5) tips.push('Their half-backs struggle under pressure. A blitz defence should rattle them.'); else if(o.play>=PLAYAV+5) tips.push('Their half-backs are good enough to play through a blitz. Stay balanced or drift.');
+  if(m.bd-o.bd>=3) tips.push('You are stronger at the breakdown. Contesting it will win you more of the ball.'); else if(o.bd-m.bd>=3) tips.push('They are stronger at the breakdown. Commit few and keep your defensive line full.');
+  if(m.stam-o.stam>=3) tips.push('You are the fitter side. A fast tempo will tire them first.'); else if(o.stam-m.stam>=3) tips.push('They are fitter than you. Slow the game down.');
+  if(o.disc<=60 && mk && mk.at.Gk>=14) tips.push('They give away a lot of penalties. Kick your goals.');
+  if(wx==='rain'||wx==='storm') tips.push('Wet weather blunts both back lines. Forward play and the boot matter more today.');
+  var st={tight:'keep it tight',bal:'mix their attack',wide:'run it wide'}, df={blitz:'a blitz defence',bal:'a balanced defence',drift:'a drift defence'}, kg={hand:'keep ball in hand',bal:'kick when it is on',terr:'kick for territory'}, pn={goal:'kick their penalties at goal',mix:'mix goal kicks and the corner',corner:'kick penalties to the corner'};
+  return {rows:rows,tips:tips.slice(0,5),style:on+' usually '+(st[t.style]||st.bal)+', '+(kg[t.kickg]||kg.bal)+' and '+(pn[t.pens]||pn.mix)+', with '+(df[t.def]||df.bal)+'.',kicker:ok};
+}
+// Assistant coach's notes on the team you have picked.
+function selNotes(G){
+  var c=G.clubs[G.user], sel=c.sel||[], out=[], sq=squad(G,G.user).filter(avail), inXV={}, last=function(p){ return p.n.split(' ').slice(-1)[0]; };
+  sel.forEach(function(id){ if(id!=null) inXV[id]=1; });
+  for(var i=0;i<15;i++){ var p=sel[i]!=null?G.players[sel[i]]:null; if(!p) continue; var slot=SLOTS[i], now=effSlot(p,slot), best=null, bv=0;
+    sq.forEach(function(q){ if(sel.slice(0,15).indexOf(q.id)>=0) return; var v=effSlot(q,slot); if(v>bv){ bv=v; best=q; } });
+    if(best && bv-now>=2.5) out.push([bv-now+5,'<b>'+best.n+'</b> ('+Math.round(bv)+' now) would do better at '+(i+1)+' than '+last(p)+' ('+Math.round(now)+').']);
+    if(p.cond<80) out.push([(80-p.cond)/3+2,'<b>'+p.n+'</b> looks jaded (fitness '+p.cond+'%). He will fade in the second half.']);
+    if(p.form.length>=3 && formAvg(p)<=5.9) out.push([3,'<b>'+p.n+'</b> is out of form (average '+formAvg(p).toFixed(1)+').']);
+    if((p.morale==null?60:p.morale)<40) out.push([3,'<b>'+p.n+'</b> is unhappy and it shows in his play.']);
+    if(fam(p,slot)<0.85) out.push([4,'<b>'+p.n+'</b> is out of position at '+(i+1)+' and plays well below his rating there.']);
+    if(p.hid && p.hid.Con<=6 && (p.apps+(p.car?p.car.apps:0))>=5) out.push([1.5,'<b>'+p.n+'</b> blows hot and cold. You never know which version turns up.']);
+  }
+  sq.forEach(function(q){ if(!inXV[q.id] && q.form.length>=3 && formAvg(q)>=7.3) out.push([2.5,'<b>'+q.n+'</b> is flying (average '+formAvg(q).toFixed(1)+') and is not in your 23.']); });
+  var hot=[]; for(i=0;i<15;i++){ p=sel[i]!=null?G.players[sel[i]]:null; if(p && p.form.length>=3 && formAvg(p)>=7.3) hot.push(last(p)); } if(hot.length) out.push([1,'In form: '+hot.slice(0,5).join(', ')+'.']);
+  var cp=c.tac&&c.tac.captain; if(cp!=null && G.players[cp] && sel.slice(0,15).indexOf(cp)<0) out.push([3.5,'Your captain <b>'+G.players[cp].n+'</b> is not in the starting team.']);
+  out.sort(function(a,b){ return b[0]-a[0]; }); return out.slice(0,7).map(function(x){ return x[1]; });
+}
+// Unit ratings for a club's likely team before a match, used by the opposition report.
+function preRat(G,cid,sel){ var M={sides:[{xv:sel.slice(0,15),bin:[]}],cond:{},day:{}}; sel.forEach(function(id){ if(id!=null){ M.cond[id]=G.players[id].cond; M.day[id]=1; } }); return sideRat(G,M,0); }
 function kicker(G,M,si){ var s=M.sides[si], best=null; for(var i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; if(s.tac.kicker===p.id) return p; if(!best||p.at.Gk>best.at.Gk) best=p; } return best; }
 function pickOn(G,M,si,R,wfn){ var c=[],tot=0; for(var i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; var w=wfn(p,i); if(w>0){ c.push([p,i,w]); tot+=w; } } if(!c.length) return null; var x=R()*tot; for(var j=0;j<c.length;j++){ x-=c[j][2]; if(x<=0) return c[j]; } return c[c.length-1]; }
 function doSub(G,M,si,slot,bi,forced){
@@ -721,13 +785,14 @@ var FW=[0,1,2,3,4,5,6,7], BK=[8,9,10,11,12,13,14];
 function bump(M,p,d){ if(!p) return; var r=M.pr[p.id]; r.r=clamp(r.r+d,1,10); }
 function unit(G,M,si,slots,d){ for(var j=0;j<slots.length;j++) bump(M,onPitch(G,M,si,slots[j]),d); }
 function tm(t){ return {
-  tryFor:(t.style==='wide'?1.03:t.style==='tight'?0.97:1)*(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.06:t.kickg==='terr'?0.92:1),
-  tryAg:(t.def==='blitz'?0.93:t.def==='drift'?1.03:1)*(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.04:t.kickg==='terr'?0.94:1),
-  penAg:(t.def==='blitz'?1.2:t.def==='drift'?0.9:1)*(t.ruck==='hard'?1.2:t.ruck==='few'?0.9:1)*(t.tackle==='hard'?1.15:t.tackle==='easy'?0.9:1),
+  tryFor:(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.06:t.kickg==='terr'?0.92:1),
+  tryAg:(t.def==='drift'?1.03:1)*(t.ment==='att'?1.08:t.ment==='def'?0.92:1)*(t.kickg==='hand'?1.04:t.kickg==='terr'?0.94:1),
+  penAg:(t.def==='blitz'?1.15:t.def==='drift'?0.9:1)*(t.ruck==='hard'?1.12:t.ruck==='few'?0.9:1)*(t.tackle==='hard'?1.15:t.tackle==='easy'?0.9:1),
   card:(t.def==='blitz'?1.15:1)*(t.tackle==='hard'?1.45:t.tackle==='easy'?0.7:1),
-  bd:t.ruck==='hard'?1.06:t.ruck==='few'?0.94:1,
-  def:(t.ruck==='hard'?0.98:t.ruck==='few'?1.03:1)*(t.tackle==='hard'?1.03:t.tackle==='easy'?0.99:1),
-  drain:(t.tempo==='fast'?1.15:t.tempo==='slow'?0.9:1)*(t.kickg==='hand'?1.05:1)*(t.tackle==='hard'?1.04:1) }; }
+  bd:t.ruck==='hard'?1.08:t.ruck==='few'?0.93:1,
+  def:(t.ruck==='hard'?0.98:t.ruck==='few'?1.02:1)*(t.tackle==='hard'?1.03:t.tackle==='easy'?0.99:1),
+  drain:(t.tempo==='fast'?1.10:t.tempo==='slow'?0.93:1)*(t.kickg==='hand'?1.05:1)*(t.tackle==='hard'?1.04:1),
+  drainOpp:t.tempo==='fast'?1.08:t.tempo==='slow'?0.95:1 }; }
 function tpick(M,a){ M.tx=((M.tx||7)*1103515245+12345)&0x7fffffff; var i=(M.tx>>>8)%a.length, u=M.used||(M.used=[]), k=0; while(k<a.length && u.indexOf(a[i])>=0){ i=(i+1)%a.length; k++; } u.push(a[i]); if(u.length>14) u.shift(); return a[i]; }
 function cnm(M,si){ return club(M.sides[si].club).name; }
 function ordn(n){ return n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th'); }
@@ -779,15 +844,15 @@ function stepMinute(G,M){
   var R=rng(G); M.min++; var m=M.min, si, i, mod=[tm(M.sides[0].tac),tm(M.sides[1].tac)], mean=[0,0];
   for(si=0;si<2;si++){ var s=M.sides[si], n=0;
     for(i=s.bin.length-1;i>=0;i--) if(s.bin[i].until<=m){ var bp=G.players[s.bin[i].pid]; s.bin.splice(i,1); say(M,m,'info',si,bp.n+' returns from the sin bin. '+club(s.club).name+' are back to '+onN(G,M,si)+'.'); }
-    for(i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; M.pr[p.id].mins++; M.cond[p.id]=Math.max(20,M.cond[p.id]-(isFwd(p.pos)?0.5:0.4)*(1.3-p.at.St/40)*mod[si].drain); mean[si]+=p.ca; n++; }
+    for(i=0;i<15;i++){ var p=onPitch(G,M,si,i); if(!p) continue; M.pr[p.id].mins++; M.cond[p.id]=Math.max(20,M.cond[p.id]-(isFwd(p.pos)?0.5:0.4)*(1.3-p.at.St/40)*mod[si].drain*mod[1-si].drainOpp); mean[si]+=p.ca; n++; }
     mean[si] = n ? mean[si]/15 : 60;
     if(s.auto && m>=46 && m%4===0 && m<76 && s.subs<8) aiSubs(G,M,si);
   }
   // every player's rating drifts toward what his ability, fitness and form on the day deserve against this opposition
   for(si=0;si<2;si++) for(i=0;i<15;i++){ var q0=onPitch(G,M,si,i); if(!q0) continue; var r0=M.pr[q0.id], tgt=6.55+(q0.ca*fam(q0,SLOTS[i])*M.day[q0.id]*condF(M.cond[q0.id])*moraleF(q0)-mean[1-si])/14; r0.r+=(clamp(tgt,4.5,8.5)-r0.r)*0.012; }
   var rt=[sideRat(G,M,0),sideRat(G,M,1)];
-  for(si=0;si<2;si++){ if(M.wx==='rain') rt[si].back*=0.94; else if(M.wx==='storm') rt[si].back*=0.89; rt[si].bd*=mod[si].bd; rt[si].def*=mod[si].def; if(M.boost){ var bo=M.boost[si]; ['scrum','line','bd','fwd','back','def','kick'].forEach(function(k){ rt[si][k]*=bo; }); } }
-  for(si=0;si<2;si++){ var cs=M.sides[si], cp=cs.tac.captain; if(cs.club!==G.user || (cp!=null && cs.xv.indexOf(cp)>=0)){ rt[si].def*=1.012; rt[si].bd*=1.012; rt[si].disc+=4; } }
+  for(si=0;si<2;si++){ if(M.wx==='rain') rt[si].back*=0.94; else if(M.wx==='storm') rt[si].back*=0.89; rt[si].bd*=mod[si].bd; rt[si].def*=mod[si].def; rt[si].defF*=mod[si].def; rt[si].defB*=mod[si].def; if(M.boost){ var bo=M.boost[si]; ['scrum','line','bd','fwd','back','def','defF','defB','kick'].forEach(function(k){ rt[si][k]*=bo; }); } }
+  for(si=0;si<2;si++){ var cs=M.sides[si], cp=cs.tac.captain; if(cs.club!==G.user || (cp!=null && cs.xv.indexOf(cp)>=0)){ var lf0=cs.club!==G.user?1:clamp((G.players[cp].at.Le||12)/13,0.5,1.5); rt[si].def*=1+0.012*lf0; rt[si].defF*=1+0.012*lf0; rt[si].defB*=1+0.012*lf0; rt[si].bd*=1+0.012*lf0; rt[si].disc+=4*lf0; } }
   if(M.unc){ var avs=(rt[0].scrum+rt[1].scrum)/2; rt[0].scrum=rt[1].scrum=avs; }
   var swing=0;
   if(R()<0.17){ var sf=R()<0.5?0:1, sw=M.unc || R()<clamp(0.9+(rt[sf].scrum-rt[1-sf].scrum)/90,0.6,0.99); M.sides[sf][sw?'scW':'scL']++; if(!sw){ swing+=sf===0?-0.04:0.04; unit(G,M,1-sf,[0,1,2],0.12); unit(G,M,sf,[0,1,2],-0.12); } }
@@ -799,10 +864,11 @@ function stepMinute(G,M){
     var pH = clamp(0.5+(M.neutral?0:0.035)+(ctrl(rt[0])-ctrl(rt[1]))/170+terr(0,1)-terr(1,0)+swing,0.25,0.75);
     var a = R()<pH?0:1, d=1-a, A=M.sides[a], D=M.sides[d], ra=rt[a], rd=rt[d];
     A.ev++;
-    var mix = A.tac.style==='tight'?0.7:A.tac.style==='wide'?0.3:0.5;
-    var att = ra.fwd*mix+ra.back*(1-mix);
-    var x = (att-rd.def-6)/26 + (a===0&&!M.neutral?0.06:0);
-    var pTry = 0.166*Math.exp(x)*mod[a].tryFor*mod[d].tryAg;
+    var mix = A.tac.style==='tight'?0.8:A.tac.style==='wide'?0.2:0.5;
+    var x = (mix*(ra.fwd-rd.defF)+(1-mix)*(ra.back-rd.defB)-6)/26 + (a===0&&!M.neutral?0.06:0);
+    // a blitz defence shuts down ordinary half-backs but good ones play through it
+    var blz = D.tac.def==='blitz' ? clamp(0.93+(ra.play-PLAYAV)/110,0.84,1.06) : 1;
+    var pTry = 0.166*Math.exp(x)*mod[a].tryFor*mod[d].tryAg*blz;
     var pPen = 0.12*mod[d].penAg*(A.tac.style==='tight'?1.15:1)*clamp(1.6-rd.disc/110,0.7,1.3);
     var pInj = 0.008*(M.sides[0].tac.tackle==='hard'?1.25:1)*(M.sides[1].tac.tackle==='hard'?1.25:1);
     var an=club(A.club).name, dn=club(D.club).name, q=R();
@@ -905,7 +971,7 @@ function record(G,f,M){
   });
   if(!wcm) [s0,s1].forEach(function(sd){ var sq=squad(G,sd.club).sort(function(a,b){ return b.ca-a.ca; }).slice(0,22); sq.forEach(function(p){ if(!M.pr[p.id] && avail(p)) p.morale=clamp((p.morale==null?60:p.morale)-0.8,5,100); }); });
   if(f.h===G.user && !M.neutral){ var c=club(f.h), t2=G.clubs[f.h], pos=standings(G).map(function(x){ return x.id; }).indexOf(f.h);
-    var F=finOf(G), tk=TICKET[F.ticket]||TICKET.norm, cp=capOf(G,f.h), dm=Math.round(demandOf(G,f.h,pos,M.stage!=='league')*(M.derby?1.15:1)), att=Math.min(cp,dm), gate=att*tk[1], mm=Math.round(att*4*SHOP[F.shop][2]); t2.bal+=gate+mm; G.ledger.gate+=gate; led(G,'merch',mm); F.att=att; F.dem=dm; F.fans=clamp((F.fans||0)+(F.ticket==='low'?0.004:F.ticket==='high'?-0.003:0)+(att>=cp?0.001:0),-0.15,0.3); f.res.att=att; try{ recCrowd(G,f,att); }catch(e){ elog(G,e); } }
+    var F=finOf(G), tk=TICKET[F.ticket]||TICKET.norm, cp=capOf(G,f.h), dm=Math.round(demandOf(G,f.h,pos,M.stage!=='league')*(M.derby?1.15:1)), att=Math.min(cp,dm), gate=att*tk[1], mm=Math.round(att*4*SHOP[F.shop][2]); var gh=Math.round(gate/2); t2.bal+=gh+mm; G.ledger.gate+=gh; F.defNow=(F.defNow||0)+(gate-gh); led(G,'merch',mm); F.att=att; F.dem=dm; F.fans=clamp((F.fans||0)+(F.ticket==='low'?0.004:F.ticket==='high'?-0.003:0)+(att>=cp?0.001:0),-0.15,0.3); f.res.att=att; try{ recCrowd(G,f,att); }catch(e){ elog(G,e); } }
 }
 function standings(G){ return CLUBS.map(function(c){ var t=G.clubs[c.id].t; return {id:c.id,t:t,diff:t.pf-t.pa}; }).sort(function(a,b){ return b.t.pts-a.t.pts || b.t.w-a.t.w || b.diff-a.diff || b.t.pf-a.t.pf || (a.id<b.id?-1:1); }); }
 function simOthers(G){ curFixtures(G).forEach(function(f){ if(!f.res) record(G,f,playOut(G,matchFor(G,f))); }); }
@@ -1034,7 +1100,7 @@ function lionsTour(G,R){ var host=LHOST[Math.floor((G.year-2029)/4)%3], Q={LP:4,
   news(G,'The Lions name their squad for '+LHN[host],sq.length+' players are going: '+nat.ENG+' from England, '+nat.IRE+' from Ireland, '+nat.SCO+' from Scotland and '+nat.WAL+' from Wales. '+cap.n+' is captain.'+(mine.length?' From your club: '+mine.join(', ')+'.':' None of your players made it.'));
   news(G,'Lions '+(w>=2?'win':'lose')+' the series '+Math.max(w,3-w)+'-'+Math.min(w,3-w),'The Tests against '+LHN[host]+' finished '+tests.map(function(t){ return t[0]+'-'+t[1]; }).join(', ')+' (Lions score first).'+(fee?' Your club receives '+money(fee)+' for releasing its players.':'')+(hurt.length?' The bad news: '+hurt.join(', ')+' came home injured.':''));
   if(mine.length>=3) ach(G,'lions'); }
-var RULESV=15, STAFFW=[0,30000,60000,110000,180000,280000], STAFFN={coach:'Head coach',physio:'Head physio',scout:'Chief scout'}, STAFFL=['','Trainee','Competent','Good','Excellent','World class'], NSC=[0,2,3,3,4,5];
+var RULESV=17, STAFFW=[0,30000,60000,110000,180000,280000], STAFFN={coach:'Head coach',physio:'Head physio',scout:'Chief scout'}, STAFFL=['','Trainee','Competent','Good','Excellent','World class'], NSC=[0,2,3,3,4,5];
 function staffOf(G){ var u=G.clubs[G.user]; if(!u.staff) u.staff={coach:2,physio:2,scout:2}; return u.staff; }
 function staffCost(G){ var t=staffOf(G); return STAFFW[t.coach]+STAFFW[t.physio]+STAFFW[t.scout]; }
 function setStaff(G,k,v){ v=+v; var t=staffOf(G); if(STAFFN[k] && v>=1 && v<=5) t[k]=v; }
@@ -1101,7 +1167,7 @@ function fanOf(id){ return FANS[id]||[0.8,0.5]; }
 function ownOf(G){ return OWN[G.user]||1500000; }
 function demandOf(G,id,pos,ko){ var f=fanOf(id), F=(G.clubs[id]&&G.clubs[id].fin)||{}, tk=F.ticket||'norm', pm=tk==='low'?1.12+0.1*(1-f[1]):tk==='high'?0.62+0.16*f[1]:1;
   return club(id).cap*(f[0]+(F.fans||0))*(1+(4.5-pos)*0.035*(1.4-f[1]))*pm*(ko?1.12:1); }
-function tbOf(G){ var u=G.clubs[G.user]; if(u.tbud==null){ u.tbud=Math.max(0,Math.round(u.bal*0.6/1000)*1000); u.bal-=u.tbud; } return u.tbud; }
+function tbOf(G){ var u=G.clubs[G.user]; if(u.tbud==null){ u.tbud=Math.max(0,Math.round(u.bal*0.6/1000)*1000); u.bal-=u.tbud; if(G.rulesv>=16 && !(G.hist&&G.hist.length)) u.tbud+=600000; } return u.tbud; }
 function tbToBank(G){ var u=G.clubs[G.user], v=Math.min(250000,tbOf(G)); if(v<=0) return 'There is nothing left in the transfer budget.'; u.tbud-=v; u.bal+=v; return ''; }
 function markEPS(G){ G.players.forEach(function(p){ if(p.eps) delete p.eps; }); G.players.filter(function(p){ return p.nat==='ENG' && !p.leg && G.clubs[p.club] && !isNat(p.club) && p.club.indexOf('F-')!==0; }).sort(function(a,b){ return b.ca-a.ca; }).slice(0,EPSN).forEach(function(p){ p.eps=1; }); G.epsv=1; }
 function ageW(a){ return a<=20?0.4:a===21?0.5:a===22?0.62:a===23?0.75:a===24?0.88:a<=30?1:a<=32?0.93:0.8; }
@@ -1125,7 +1191,7 @@ function setSponsor(G,k){ var F=finOf(G); if(!SPON[k]) return 'No such deal.'; i
 function setTicket(G,k){ if(TICKET[k]) finOf(G).ticket=k; }
 function buyShop(G){ var F=finOf(G), u=G.clubs[G.user]; if(F.shop>=SHOP.length-1) return 'The shop is already at its top level.'; var c=SHOP[F.shop+1][1]; if(u.bal<c) return 'You cannot afford it: it costs '+money(c)+'.'; u.bal-=c; led(G,'invest',c); F.shop++; news(G,'Shop upgraded','The club now runs a '+SHOP[F.shop][0].toLowerCase()+'. Merchandise income goes up from today.'); return ''; }
 function buildStand(G){ var F=finOf(G), u=G.clubs[G.user]; if(F.exp>=EXPMAX) return 'The ground cannot be extended any further.'; if(F.capBuild) return 'Builders are already on site. The new seats open next season.'; if(u.bal<EXPCOST) return 'You cannot afford it: it costs '+money(EXPCOST)+'.'; u.bal-=EXPCOST; led(G,'invest',EXPCOST); F.capBuild=EXPSEATS; F.exp++; news(G,'Stand extension under way',EXPSEATS.toLocaleString('en-GB')+' extra seats will open at the start of next season.'); return ''; }
-function finTick(G){ var u=G.clubs[G.user], F=finOf(G);
+function finTick(G){ var u=G.clubs[G.user], F=finOf(G); var dp=F.defPrev||0; F.defPrev=F.defNow||0; F.defNow=0; if(dp){ u.bal+=dp; led(G,'gate',dp); }
   if(!F.spon){ setSponsor(G,'steady'); news(G,'Sponsor signed','You did not choose a shirt sponsor, so the board signed the steady deal for this season. You can choose next summer on the Finance screen.'); }
   var g=sponVal(G,F.spon,1), sp=Math.min(Math.round(g/18),Math.max(0,g-F.spaid)); F.spaid+=sp;
   var dw=u.t.w-(F.wpaid||0); if(dw>0){ sp+=dw*sponVal(G,F.spon,2); F.wpaid=u.t.w; }
@@ -1137,7 +1203,7 @@ function finTick(G){ var u=G.clubs[G.user], F=finOf(G);
   if(u.bal<-1000000 && !F.warn){ F.warn=1; news(G,'The board is worried about money','The bank is more than a million pounds overdrawn, on top of what the owner already puts in. Interest is charged every week, and past two million the board will start to lose confidence in you. Sell a player, trim the wage bill or move money across from the transfer budget.'); }
   if(u.bal<-2000000) G.conf=clamp((G.conf==null?60:G.conf)-2,0,100);
 }
-function finSeasonEnd(G,pos,champ){ var u=G.clubs[G.user], F=finOf(G); if(!F.spon) return; var b=Math.max(0,sponVal(G,F.spon,1)-F.spaid)+(pos<=4?sponVal(G,F.spon,3):0)+(champ?sponVal(G,F.spon,4):0); F.spaid=sponVal(G,F.spon,1); if(b){ u.bal+=b; led(G,'spon',b); }
+function finSeasonEnd(G,pos,champ){ var u=G.clubs[G.user], F=finOf(G); var dq=(F.defPrev||0)+(F.defNow||0); F.defPrev=0; F.defNow=0; if(dq){ u.bal+=dq; led(G,'gate',dq); } if(!F.spon) return; var b=Math.max(0,sponVal(G,F.spon,1)-F.spaid)+(pos<=4?sponVal(G,F.spon,3):0)+(champ?sponVal(G,F.spon,4):0); F.spaid=sponVal(G,F.spon,1); if(b){ u.bal+=b; led(G,'spon',b); }
   var ci=capInfo(G,G.user), L=G.ledger; if(ci.counted<CAPFLOOR){ var fine=CAPFLOOR-ci.counted; u.bal-=fine; led(G,'fine',fine); news(G,'Fined for underspending','Your cap spend of '+money(ci.counted)+' is below the league minimum of '+money(CAPFLOOR)+'. The league has fined the club the difference, '+money(fine)+'.'); }
   var own=ownOf(G), rest=Math.max(0,own-(F.opaid||0)); if(rest){ F.opaid=own; F.owner=(F.owner||0)+rest; u.bal+=rest; led(G,'owner',rest); }
   if(!G.finHist) G.finHist=[]; G.finHist.push({y:G.year,pos:pos,L:JSON.parse(JSON.stringify(L)),bal:u.bal,tbud:tbOf(G),owner:F.owner||0});
@@ -1146,10 +1212,10 @@ function finOp(L){ return (L.gate||0)+(L.spon||0)+(L.merch||0)+(L.central||0)+(L
 function finNewSeason(G){ var F=finOf(G), u=G.clubs[G.user]; G.hl=0; G.press=null; G.players.forEach(function(p){ p.c0=p.ca; }); try{ if(lionsYear(G.year)) lionsTour(G,rng(G)); }catch(e){ elog(G,e); } F.spon=null; F.spaid=0; F.wpaid=0; F.warn=0; F.opaid=0; try{ markEPS(G); }catch(e){ elog(G,e); }
   var lp=G.hist.length?G.hist[G.hist.length-1].pos:6, grant=300000+(11-lp)*50000, sweep=Math.max(0,Math.round((u.bal-500000)*0.5/1000)*1000); tbOf(G); u.bal-=sweep; u.tbud+=grant+sweep; news(G,'Transfer budget set','The board has added '+money(grant)+' to your transfer budget'+(sweep?' and moved '+money(sweep)+' across from the bank':'')+'. You have '+money(u.tbud)+' to spend on fees. Wages are paid from the bank, not from this.'); if(F.capBuild){ F.capAdd=(F.capAdd||0)+F.capBuild; F.capBuild=0; news(G,'New seats open','The extension is finished. Capacity is now '+capOf(G,G.user).toLocaleString('en-GB')+'.'); }
   news(G,'Sponsors are waiting','Three shirt sponsors have made offers for the new season. Choose one on the Finance screen before the first match, or the board will pick the steady deal.'); }
-var TRF={bal:['Balanced',[]],set:['Set piece',['Sc','Li']],phys:['Power game',['Ca','Bd']],att:['Running rugby',['Pa','Ha','Pc']],def:['Defence',['Ta','Bd']],kick:['Kicking game',['Ki','Gk']],fit:['Fitness and discipline',['St','Di']]}, TRMAX=6;
+var TRF={bal:['Balanced',[]],set:['Set piece',['Sc','Li']],phys:['Power game',['Ca','Bd','Sg']],att:['Running rugby',['Pa','Ha','Pc','Ag']],def:['Defence',['Ta','Bd','Po']],kick:['Kicking game',['Ki','Gk']],fit:['Fitness and discipline',['St','Di','Wr']]}, TRMAX=6;
 function trChance(p){ return p.age<=21?0.32:p.age<=24?0.24:p.age<=28?0.15:p.age<=31?0.08:0.03; }
 // Skills each position drills by default: props and hookers the set piece and contact, back rows tackling and turnovers, fly-halves kicking, wings pace and handling.
-var POSTR={LP:['Sc','Ta','Bd','Ca'],HK:['Sc','Li','Ta','Bd'],TP:['Sc','Ta','Bd','Ca'],LK:['Li','Ta','Bd','Ca'],BR:['Ta','Bd','Ca','St'],SH:['Pa','Ki','Pc','Ha'],FH:['Ki','Gk','Pa','Ha'],CE:['Ta','Pa','Ca','Ha'],WG:['Pc','Ha','Ca','Ta'],FB:['Ki','Ha','Pc','Ta']};
+var POSTR={LP:['Sc','Ta','Bd','Ca','Sg'],HK:['Sc','Li','Ta','Bd','Sg'],TP:['Sc','Ta','Bd','Ca','Sg'],LK:['Li','Ta','Bd','Ca','Wr'],BR:['Ta','Bd','Ca','St','Wr'],SH:['Pa','Ki','Pc','Ha','De'],FH:['Ki','Gk','Pa','Ha','De'],CE:['Ta','Pa','Ca','Ha','Po'],WG:['Pc','Ha','Ca','Ta','Ag'],FB:['Ki','Ha','Pc','Ta','Po']};
 function trGain(G,p,a,once){ if(!a || p.at[a]>=20 || (p.trg||0)>=4) return false; var done=p.trs||''; if(once && done.indexOf(a)>=0) return false; if(!once && done.split(a).length>2) return false;
   p.at[a]++; p.trg=(p.trg||0)+1; p.trs=done+a; if(p.trg===2 || p.trg===4){ if(p.ca<Math.min(99,p.pa||p.ca)) p.ca++; else if(p.trg===4 && p.age<=30 && (p.trx||0)<3 && p.ca<99){ p.ca++; p.pa=Math.max(p.pa||0,p.ca); p.trx=(p.trx||0)+1; } } return true; }
 function trainStep(G,R){
@@ -1265,6 +1331,8 @@ function develop(p,R){
   if(p.apps>=6){ var av=p.rs/p.apps; if(av>=7.1) d+=1; else if(av<=5.9) d-=1; if(av>=7.5 && a<=29) d+=1; }
   p.ca=clamp(p.ca+d,40,97); if(p.ca>p.pa) p.pa=p.ca; p.age++; if(p.show) p.show.ca=clamp(p.show.ca+d,40,97);
   var w=PROF[p.pos], dd=p.ca-old; if(dd) ATTR.forEach(function(k,i){ p.at[k]=clamp(Math.round(p.at[k]+dd/5*(0.42+0.62*w[i])+(R()-0.5)*0.6),1,20); });
+  setAt2(p); if(dd){ var w2=PROF2[p.pos]; ['Sg','Ag','Wr','De','Po'].forEach(function(k,i){ p.at[k]=clamp(Math.round(p.at[k]+dd/5*(0.42+0.62*w2[i])+(R()-0.5)*0.6),1,20); }); }
+  if(a>=30){ if(R()<0.5) p.at.Ag=Math.max(1,p.at.Ag-1); if(R()<0.3) p.at.Le=Math.min(20,p.at.Le+1); } else if(a<=24 && R()<0.35) p.at.De=Math.min(20,p.at.De+1);
   if(a>=30){ if(R()<0.6) p.at.Pc=Math.max(1,p.at.Pc-1); if(R()<0.4) p.at.St=Math.max(1,p.at.St-1); }
   if(p.age>21) p.acad=false;
 }
@@ -1308,7 +1376,7 @@ function newSeason(G){
     for(var k=0;k<sign;k++){ var ps=POS.slice().sort(function(a,b){ return (have[a]||0)/MINDEPTH[a]-(have[b]||0)/MINDEPTH[b]; })[Math.floor(R()*4)]; have[ps]=(have[ps]||0)+1;
       var z=addPlayer(G,R,{n:natName(R,code),pos:ps,age:23+Math.floor(R()*5),ca:clamp(Math.round(G.fstr[c.id]+1+R()*7),72,94),club:c.id,nat:code}); z.pa=Math.min(97,z.ca+Math.floor(R()*4)); } });
   FOREIGN.forEach(function(c){ var y=genYouth(G,R,c.id,POS[Math.floor(R()*POS.length)]); y.acad=false; y.age=20+Math.floor(R()*3); y.ca=72+Math.floor(R()*10); y.pa=Math.min(96,y.ca+Math.floor(R()*12)); y.wage=baseWage(y);
-    var w=PROF[y.pos]; ATTR.forEach(function(k,i){ y.at[k]=clamp(Math.round(y.ca/5*(0.42+0.62*w[i])+(R()-0.5)*3),1,20); }); });
+    var w=PROF[y.pos]; ATTR.forEach(function(k,i){ y.at[k]=clamp(Math.round(y.ca/5*(0.42+0.62*w[i])+(R()-0.5)*3),1,20); }); ATTR2.forEach(function(k){ delete y.at[k]; }); setAt2(y); });
   // other clubs recruit: free agents first, then the odd signing from abroad, and the odd player leaves for abroad
   var ai=CLUBS.filter(function(c){ return c.id!==uc; }).sort(function(){ return R()-0.5; });
   var sign=function(c,p,note){ var from=p.club; p.club=c.id; p.contract=G.year+1+1+Math.floor(R()*3); p.wage=Math.max(p.wage,baseWage(p)); p.faY=0; if(p.ca>=80) moves.push(p.n+' to '+c.name+(note||'')); };
@@ -1383,7 +1451,7 @@ function leaders(G,key,n){ var a=G.players.filter(function(p){ return p.apps>0; 
   return a.slice(0,n); }
 
 return {POS:POS,POSN:POSN,SLOTS:SLOTS,ATTR:ATTR,ATTRN:ATTRN,CAP:CAP,ROUNDS:ROUNDS,DEADLINE:DEADLINE,MAXSQUAD:MAXSQUAD,rng:rng,club:club,squad:squad,wageBill:wageBill,value:value,fam:fam,effSlot:effSlot,avail:avail,formAvg:formAvg,
-  pickXV:pickXV,selProblems:selProblems,xvStrength:xvStrength,newGame:newGame,money:money,roundLabel:roundLabel,dateLabel:dateLabel,newMatch:newMatch,stepMinute:stepMinute,playOut:playOut,doSub:doSub,onPitch:onPitch,winner:winner,
+  pickXV:pickXV,selProblems:selProblems,xvStrength:xvStrength,preRat:preRat,oppReport:oppReport,selNotes:selNotes,keySkills:keySkills,nowOf:nowOf,ATALL:ATALL,ATTR2:ATTR2,ATTRAIN:ATTRAIN,newGame:newGame,money:money,roundLabel:roundLabel,dateLabel:dateLabel,newMatch:newMatch,stepMinute:stepMinute,playOut:playOut,doSub:doSub,onPitch:onPitch,winner:winner,
   curFixtures:curFixtures,userFixture:userFixture,matchFor:matchFor,record:record,standings:standings,simOthers:simOthers,advance:advance,makeOffer:makeOffer,askPrice:askPrice,windowOpen:windowOpen,acceptBid:acceptBid,rejectBid:rejectBid,leaders:leaders,kicker:kicker,migrate:migrate,isNat:isNat,wcYear:wcYear,poolTable:poolTable,applyEngland:applyEngland,applySquads:applySquads,honoursOf:honoursOf,natEligible:natEligible,callUp:callUp,sendHome:sendHome,abroad:abroad,pubCa:pubCa,pubAt:pubAt,known:known,est:est,estValue:estValue,scout:scout,acceptJob:acceptJob,benchCover:benchCover,demand:demand,renew:renew,expiring:expiring,newSeason:newSeason,euInfo:euInfo,TRF:TRF,TRMAX:TRMAX,setTrain:setTrain,setFocus:setFocus,derbyOf:derbyOf,wxOf:wxOf,WXN:WXN,WXT:WXT,bigGame:bigGame,setPress:setPress,pressKey:pressKey,teamTalk:teamTalk,mgrOf:mgrOf,mgrLine:mgrLine,elog:elog,mgrList:mgrList,relName:relName,MGS:MGS,ACH:ACH,traitsOf:traitsOf,nickOf:nickOf,lionsYear:lionsYear,LHN:LHN,STAFFW:STAFFW,STAFFN:STAFFN,STAFFL:STAFFL,staffOf:staffOf,setStaff:setStaff,nScouts:nScouts,loanOut:loanOut,toggleShort:toggleShort,promise:promise,acceptCounter:acceptCounter,SPON:SPON,TICKET:TICKET,SHOP:SHOP,EXPSEATS:EXPSEATS,EXPCOST:EXPCOST,EXPMAX:EXPMAX,finOf:finOf,tbOf:tbOf,tbToBank:tbToBank,ownOf:ownOf,finOp:finOp,EPSPAY:EPSPAY,capInfo:capInfo,setMarquee:setMarquee,CAPFLOOR:CAPFLOOR,HGC:HGC,HGMAX:HGMAX,INTC:INTC,INTMAX:INTMAX,INJC:INJC,INJMAX:INJMAX,OWNMAX:OWNMAX,capOf:capOf,sponVal:sponVal,setSponsor:setSponsor,setTicket:setTicket,buyShop:buyShop,buildStand:buildStand};
 })();
 if (typeof module !== 'undefined') module.exports = E;
@@ -1427,6 +1495,7 @@ function ovrN(p) { return known(p) ? E.pubCa(p) : E.est(p).mid; }
 function atS(p, k, i) { var v = E.pubAt(p, k); if (known(p)) return v; var lo = Math.max(1, v - ((p.id + i) % 4) - 1), hi = Math.min(20, lo + 4); return lo + '-' + hi; }
 function ratCls(r) { return r >= 7.5 ? 'good' : r >= 6 ? '' : r >= 5 ? 'warn' : 'bad'; }
 function avgR(p) { return p.apps ? (p.rs / p.apps).toFixed(2) : '-'; }
+function nowCls(p, slot) { var d = E.nowOf(p, slot) - E.pubCa(p); return p.show ? '' : d >= 0 ? 'good' : d <= -4 ? 'bad' : ''; }
 function formS(p) { return p.form.length ? E.formAvg(p).toFixed(1) : '-'; }
 function table(head, rows, cls) { return '<div class="scroll"><table class="' + (cls || '') + '"><thead><tr>' + head.map(function (h) { return '<th' + (h[1] ? ' class="' + h[1] + '"' : '') + '>' + h[0] + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>'; }
 function sortVal(p, k, own) {
@@ -1438,10 +1507,11 @@ function squadTable(list, own) {
   list = list.filter(function (p) { return !q.pos || (q.pos === 'F' ? fw.indexOf(p.pos) >= 0 : q.pos === 'B' ? fw.indexOf(p.pos) < 0 : p.pos === q.pos); });
   list.sort(function (a, b) { var x = sortVal(a, q.k, own), y = sortVal(b, q.k, own); return (x < y ? -1 : x > y ? 1 : 0) * q.d || b.ca - a.ca; });
   var H = function (label, k, cls, title) { return ['<button type="button" class="th' + (q.k === k ? ' on' : '') + '" data-a="sort" data-id="' + k + '"' + (title ? ' title="' + title + '"' : '') + '>' + label + (q.k === k ? (q.d > 0 ? ' &#9650;' : ' &#9660;') : '') + '</button>', cls]; };
-  var bar = '<div class="filters">' + sel('sq_pos', [['', 'All positions'], ['F', 'Forwards'], ['B', 'Backs']].concat(E.POS.map(function (k) { return [k, E.POSN[k]]; })), q.pos, 'sq') + sel('sq_view', [['main', 'Overview'], ['attr', 'Attributes']], q.view, 'sq') + '<span class="dim small">Tap a column heading to sort. Tap again to reverse.</span></div>';
-  if (q.view === 'attr') return bar + table([H('Player', 'n'), H('Pos', 'pos'), H('Ovr', 'ca', 'n')].concat(E.ATTR.map(function (k) { return H(k, k, 'n', E.ATTRN[k]); })),
-    list.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="n hi">' + ovrS(p) + '</td>' + E.ATTR.map(function (k, i) { var v = E.pubAt(p, k), kn = known(p); return '<td class="n ' + (!kn ? 'dim' : v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + atS(p, k, i) + '</td>'; }).join('') + '</tr>'; })) +
-    '<p class="dim small">' + E.ATTR.map(function (k) { return k + ' ' + E.ATTRN[k].toLowerCase(); }).join(' · ') + '. All out of 20.</p>';
+  var bar = '<div class="filters">' + sel('sq_pos', [['', 'All positions'], ['F', 'Forwards'], ['B', 'Backs']].concat(E.POS.map(function (k) { return [k, E.POSN[k]]; })), q.pos, 'sq') + sel('sq_view', [['main', 'Overview'], ['attr', 'Technical skills'], ['attr2', 'Physical and mental']], q.view, 'sq') + '<span class="dim small">Tap a column heading to sort. Tap again to reverse.</span></div>';
+  var AL = q.view === 'attr2' ? E.ATTR2 : E.ATTR;
+  if (q.view === 'attr' || q.view === 'attr2') return bar + table([H('Player', 'n'), H('Pos', 'pos'), H('Ovr', 'ca', 'n')].concat(AL.map(function (k) { return H(k, k, 'n', E.ATTRN[k]); })),
+    list.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="n hi">' + ovrS(p) + '</td>' + AL.map(function (k, i0) { var i = E.ATALL.indexOf(k), v = E.pubAt(p, k), kn = known(p); return '<td class="n ' + (!kn ? 'dim' : v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + atS(p, k, i) + '</td>'; }).join('') + '</tr>'; })) +
+    '<p class="dim small">' + AL.map(function (k) { return k + ' ' + E.ATTRN[k].toLowerCase(); }).join(' · ') + '. All out of 20.</p>';
   return bar + table([H('Player', 'n'), H('Pos', 'pos'), H('Nat', 'nat', '', 'Nationality'), H('Age', 'age', 'n'), H('Ovr', 'ca', 'n'), H('Con', 'cond', 'n'), H('Frm', 'form', 'n'), H('Morale', 'mor'), H('App', 'apps', 'n'), H('Tr', 'tries', 'n'), H('Pts', 'pts', 'n'), H('AvR', 'avr', 'n'), H('Ctr', 'ctr', 'n', 'Contract runs to June of this year'), H(own ? 'Wage' : 'Value', 'money', 'n')],
     list.map(function (p) { return '<tr><td class="nm">' + pl(p) + '</td><td>' + p.pos + '</td><td class="dim">' + (p.nat || '') + '</td><td class="n">' + p.age + '</td><td class="n hi">' + ovrS(p) + '</td><td class="n ' + condCls(p.cond) + '">' + p.cond + '</td><td class="n">' + formS(p) + '</td><td class="' + morL(p)[1] + '">' + morL(p)[0] + '</td><td class="n">' + p.apps + '</td><td class="n">' + p.tries + '</td><td class="n">' + p.pts + '</td><td class="n">' + avgR(p) + '</td><td class="n ' + (p.contract <= G.year + 1 ? 'warn' : '') + '">' + p.contract + '</td><td class="n">' + money(own ? p.wage : E.estValue(G, p)) + '</td></tr>'; }));
 }
@@ -1455,7 +1525,7 @@ function wcPanel() { var W = G.wc; if (!W) return '';
   var pools = W.pools.map(function (p, i) { return '<div><h3 class="sub3">Pool ' + 'ABCD'.charAt(i) + '</h3>' + table([['Team'], ['P', 'n'], ['W', 'n'], ['PF', 'n'], ['PA', 'n'], ['Pts', 'n']], E.poolTable(G, p).map(function (id) { var t = G.clubs[id].t; return '<tr class="' + (id === 'N-ENG' ? 'me' : '') + '"><td class="nm">' + club(id).name + '</td><td class="n">' + t.p + '</td><td class="n">' + t.w + '</td><td class="n">' + t.pf + '</td><td class="n">' + t.pa + '</td><td class="n hi">' + t.pts + '</td></tr>'; })) + '</div>'; }).join('');
   var ko = W.fix.slice(3).reduce(function (a, r) { return a.concat(r); }, []);
   return panel('World Cup ' + W.year + (W.champ ? ': ' + club(W.champ).name + ' are world champions' : ''), '<div class="cols">' + pools + '</div>' + (ko.length ? '<h3 class="sub3">Knockout stage</h3>' + resTable(ko) : '') + '<p class="dim small">' + NATIONS.length + ' nations in four pools; the top two in each go through. Every nation picks its best available players on rating and form each tournament.</p>'); }
-function helpPanel() { return panel('How it plays', '<ul class="help"><li>Press Continue to move to your next match. Everything else can be done from the menu first.</li><li>Ovr is a player\'s overall rating out of 100. Con is match fitness. Frm is the average of his last five match ratings.</li><li>Players out of position, tired, unhappy or out of form play below their rating. Each player also has a good or bad day; consistent players vary less.</li><li>Three yellow cards in a season bring a one-match ban. A red card brings a ban of two to five matches.</li><li>Eighteen league rounds, then semi-finals and a final at Twickenham. The best players miss rounds 10 to 12 on international duty.</li><li>The career runs season after season. Watch the Ctr column: a player whose contract ends this June leaves for nothing unless you renew him from his profile.</li><li>Miss the target the board sets too often and you will be sacked. Do well and a bigger club may offer you its job.</li><li>Every player has a nationality. Six Nations players miss rounds 10 to 12. There is a World Cup every four years, starting in autumn 2027: finish in the top three and you can apply to coach England in it. Legends never play international rugby.</li><li>You only see estimates for players at other clubs. Send one of your scouts from a player profile to get the exact ratings after your next match.</li><li>Money: the bank pays wages, running costs and building work. Transfer fees come only from the transfer budget, and player sales go back into it. The owner puts in a fixed sum each season as a loan; do better than that plan and the surplus is yours. Each summer the board tops up the transfer budget and moves across half of any bank balance above 500,000 pounds.</li><li>Finance screen: choose a shirt sponsor each summer, set ticket prices, extend the ground, upgrade the shop and pick the one player who sits outside the salary cap. Every club has its own fan base, so some grounds sell out and others never do. Finished seasons are kept in the Year by year table.</li><li>Salary cap: 6.4 million pounds plus credits for home-grown players, internationals and long-term injuries. You must also spend at least 5.4 million or pay a fine. England pays 160,000 pounds a season towards each of its 25 contracted players.</li><li>Transfers: a club or player that wants more will come back with a counter-offer, which stands for two matches. Add targets to your shortlist from their profile. Press Compare on one player, then open another, to see them side by side.</li><li>Unhappy players: a first-team player left out for six matches will ask for game time, and after eleven will ask to leave. You can promise him a run in the side from his profile, but break the promise and he demands a move. Four matches change the mind of a player who wants out.</li><li>Loans: players aged 23 or under can go to a Championship club until the summer. The other club pays half his wages and he comes back improved. You must keep 30 players.</li><li>Staff (Tactics screen): a better head coach speeds up training, a better physio shortens injuries and a better chief scout lets you watch more players at once. Their wages come out of the bank.</li><li>Training (Tactics screen): set a team focus and give up to six players an individual skill to work on. Young players learn fastest.</li><li>Europe: the top six qualify for the Champions Cup. You play your own ties on top of the league.</li><li>Records: each player profile shows his career season by season. Awards, club records and your own career are on this screen. There are three save slots on the title screen.</li><li>Match days: weather changes how well running rugby and goal-kicking work. Derbies draw bigger crowds and swing morale. Before big games the press ask for a line, and at half-time you can give a team talk.</li><li>Rivals: every club has a named manager with his own style. They are listed on the Clubs screen. Achievements, Lions tours and Manager of the Year are on this screen, and the end-of-season review has a summary you can copy and share.</li><li>Commentary: the Voice button in a match reads the commentary aloud, and the Clips button switches the built-in commentary clips on or off.</li></ul>'); }
+function helpPanel() { return panel('How it plays', '<ul class="help"><li>Press Continue to move to your next match. Everything else can be done from the menu first.</li><li>Ovr is a player\'s overall rating out of 100. Con is match fitness. Frm is the average of his last five match ratings.</li><li>Before every match the opposition report compares the two teams unit by unit and suggests tactics. No one plan is best against everybody.</li><li>On the Team screen, Now shows what each player is worth this week and the assistant coach lists his concerns. Tap a shirt number to see which skills matter most there.</li><li>Players have 21 skills out of 20: technical, physical and mental. Flair, aggression, leadership and bravery are character and cannot be trained. Pick a captain with high leadership.</li><li>Players out of position, tired, unhappy or out of form play below their rating. Each player also has a good or bad day; consistent players vary less.</li><li>Three yellow cards in a season bring a one-match ban. A red card brings a ban of two to five matches.</li><li>Eighteen league rounds, then semi-finals and a final at Twickenham. The best players miss rounds 10 to 12 on international duty.</li><li>The career runs season after season. Watch the Ctr column: a player whose contract ends this June leaves for nothing unless you renew him from his profile.</li><li>Miss the target the board sets too often and you will be sacked. Do well and a bigger club may offer you its job.</li><li>Every player has a nationality. Six Nations players miss rounds 10 to 12. There is a World Cup every four years, starting in autumn 2027: finish in the top three and you can apply to coach England in it. Legends never play international rugby.</li><li>You only see estimates for players at other clubs. Send one of your scouts from a player profile to get the exact ratings after your next match.</li><li>Money: the bank pays wages, running costs and building work. Transfer fees come only from the transfer budget, and player sales go back into it. The owner puts in a fixed sum each season as a loan; do better than that plan and the surplus is yours. Each summer the board tops up the transfer budget and moves across half of any bank balance above 500,000 pounds.</li><li>Finance screen: choose a shirt sponsor each summer, set ticket prices, extend the ground, upgrade the shop and pick the one player who sits outside the salary cap. Every club has its own fan base, so some grounds sell out and others never do. Finished seasons are kept in the Year by year table.</li><li>Salary cap: 6.4 million pounds plus credits for home-grown players, internationals and long-term injuries. You must also spend at least 5.4 million or pay a fine. England pays 160,000 pounds a season towards each of its 25 contracted players.</li><li>Transfers: a club or player that wants more will come back with a counter-offer, which stands for two matches. Add targets to your shortlist from their profile. Press Compare on one player, then open another, to see them side by side.</li><li>Unhappy players: a first-team player left out for six matches will ask for game time, and after eleven will ask to leave. You can promise him a run in the side from his profile, but break the promise and he demands a move. Four matches change the mind of a player who wants out.</li><li>Loans: players aged 23 or under can go to a Championship club until the summer. The other club pays half his wages and he comes back improved. You must keep 30 players.</li><li>Staff (Tactics screen): a better head coach speeds up training, a better physio shortens injuries and a better chief scout lets you watch more players at once. Their wages come out of the bank.</li><li>Training (Tactics screen): set a team focus and give up to six players an individual skill to work on. Young players learn fastest.</li><li>Europe: the top six qualify for the Champions Cup. You play your own ties on top of the league.</li><li>Records: each player profile shows his career season by season. Awards, club records and your own career are on this screen. There are three save slots on the title screen.</li><li>Match days: weather changes how well running rugby and goal-kicking work. Derbies draw bigger crowds and swing morale. Before big games the press ask for a line, and at half-time you can give a team talk.</li><li>Rivals: every club has a named manager with his own style. They are listed on the Clubs screen. Achievements, Lions tours and Manager of the Year are on this screen, and the end-of-season review has a summary you can copy and share.</li><li>Commentary: the Voice button in a match reads the commentary aloud, and the Clips button switches the built-in commentary clips on or off.</li></ul>'); }
 function fpanel(title, body, open) { var k = title, o = UI.fold && UI.fold[k] !== undefined ? UI.fold[k] : !!open; return '<details class="panel fold" data-f="' + k + '"' + (o ? ' open' : '') + '><summary><h2>' + title + '</h2></summary>' + body + '</details>'; }
 function dataPanel() { if (typeof SQUADS === 'undefined') return ''; var d = SQUADS.asof.split('-'), m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+d[1] - 1];
   return panel('Player data', '<p>Squad data as of <b>' + (+d[2]) + ' ' + m + ' ' + d[0] + '</b>. National squads come from each union\'s latest published squad; new games start from the latest data, and a game already in progress keeps its own world but receives newly called-up players.</p>'); }
@@ -1512,25 +1582,34 @@ function natSquad(sq) { var code = G.user.slice(2), inn = {}; sq.forEach(functio
   return panel(club(G.user).name + ' squad', '<p class="dim">The squad is yours to pick. Call up any eligible player from any club in any league, at home or abroad, and send home anyone you like, at any point in the tournament. Up to 33 players.</p>' + table(H, sq.slice().sort(ord).map(function (p) { return row(p, 'sendhome', 'Send home'); })), sq.length + ' of 33') +
     panel('Eligible players outside the squad', table(H, others.map(function (p) { return row(p, 'callup', 'Call up'); })), 'best 90 by rating'); }
 S.squad = function () { var sq = E.squad(G, G.user); if (E.isNat(G.user)) return natSquad(sq); return panel('First-team squad', squadTable(sq, true), sq.length + ' players'); };
+function reportPanel(opp, wx) {
+  var r; try { r = E.oppReport(G, opp, wx); } catch (e) { E.elog(G, e, 'report'); return ''; }
+  var rows = r.rows.map(function (x) { var d = x[1] - x[2]; return '<tr><td>' + x[0] + '</td><td class="n ' + (d >= 2 ? 'good' : '') + '">' + Math.round(x[1]) + '</td><td class="n ' + (d <= -2 ? 'bad' : '') + '">' + Math.round(x[2]) + '</td><td class="' + (d >= 2 ? 'good' : d <= -2 ? 'bad' : 'dim') + '">' + (d >= 4 ? 'Big edge' : d >= 2 ? 'Edge' : d <= -4 ? 'Well behind' : d <= -2 ? 'Behind' : 'Even') + '</td></tr>'; });
+  return panel('Opposition report', '<p class="small">' + esc(r.style) + (r.kicker ? ' Goal kicker: ' + esc(r.kicker.n) + ' (' + r.kicker.at.Gk + ' out of 20).' : '') + '</p>' + table([[''], ['You', 'n'], ['Them', 'n'], ['']], rows) + '<h3>Your analysts say</h3><ul class="help">' + r.tips.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul><p class="row">' + btn('Change tactics', 'go', 'data-id="tactics"') + '</p><p class="dim small">Ratings are for the teams as picked today, including fitness, form and morale.</p>');
+}
+function notesPanel() {
+  var n; try { n = E.selNotes(G); } catch (e) { E.elog(G, e, 'notes'); return ''; }
+  return panel('Assistant coach', n.length ? '<ul class="help">' + n.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>' : '<p class="good">No concerns. This is your strongest available team.</p>');
+}
 S.select = function () {
   var c = G.clubs[G.user], s = c.sel || [], probs = E.selProblems(G, G.user, c.sel);
   var rows = E.SLOTS.map(function (slot, i) { var p = s[i] != null ? G.players[s[i]] : null;
-    return (i === 15 ? '<tr class="sep"><td colspan="6">Replacements</td></tr>' : '') + '<tr data-a="slot" data-id="' + i + '" class="pickrow"><td class="n hi">' + (i + 1) + '</td><td>' + slot + '</td><td class="nm">' + (p ? esc(p.n) + flags(p) + (p.pos !== slot ? ' <span class="dim">(' + p.pos + ')</span>' : '') : '<span class="bad">Empty</span>') + '</td><td class="n hi">' + (p ? E.pubCa(p) : '') + '</td><td class="n ' + (p ? condCls(p.cond) : '') + '">' + (p ? p.cond : '') + '</td><td class="n">' + (p ? formS(p) : '') + '</td></tr>'; });
+    return (i === 15 ? '<tr class="sep"><td colspan="6">Replacements</td></tr>' : '') + '<tr data-a="slot" data-id="' + i + '" class="pickrow"><td class="n hi">' + (i + 1) + ' <span class="dim small">' + slot + '</span></td><td class="nm">' + (p ? esc(p.n) + flags(p) + (p.pos !== slot ? ' <span class="dim">(' + p.pos + ')</span>' : '') : '<span class="bad">Empty</span>') + '</td><td class="n">' + (p ? E.pubCa(p) : '') + '</td><td class="n ' + (p ? condCls(p.cond) : '') + '">' + (p ? p.cond : '') + '</td><td class="n">' + (p ? formS(p) : '') + '</td><td class="n ' + (p ? nowCls(p, slot) || 'hi' : '') + '">' + (p ? E.nowOf(p, slot) : '') + '</td></tr>'; });
   return panel('Team selection', '<p class="row">' + btn('Pick best team', 'autopick') + btn('Clear', 'clearsel') + '</p>' + (!probs.length && !E.benchCover(G, c.sel) ? '<p class="warn">Your bench has no cover for both hooker and prop. If a front-row player is injured, scrums go uncontested.</p>' : '') + (probs.length ? '<p class="bad">' + probs.map(esc).join(' ') + '</p>' : '<p class="good">Team is ready.</p>') + '<p class="dim small">Tap a shirt number to choose who wears it.</p>' +
-    table([['No', 'n'], ['Slot'], ['Player'], ['Ovr', 'n'], ['Con', 'n'], ['Frm', 'n']], rows, 'pick'));
+    table([['No', 'n'], ['Player'], ['Ovr', 'n'], ['Con', 'n'], ['Frm', 'n'], ['Now', 'n']], rows, 'pick') + '<p class="dim small">Now is what he is worth in that shirt this week: his rating adjusted for position, fitness, form and morale. Green means at or above his rating, red well below.</p>') + notesPanel();
 };
 function tacForm(tac, live) {
   var sq = live ? [] : E.squad(G, G.user).filter(function (p) { return p.at.Gk >= 8; }).sort(function (a, b) { return b.at.Gk - a.at.Gk; });
   var f = function (label, id, opts, help) { return '<div class="field"><label for="t_' + id + '">' + label + '</label>' + sel('t_' + id, opts, tac[id], 'tac') + '<span class="dim small">' + help + '</span></div>'; };
-  return f('Mentality', 'ment', [['def', 'Defensive'], ['bal', 'Balanced'], ['att', 'Attacking']], 'Attacking raises the try rate at both ends. Defensive lowers it at both ends.') +
-    f('Attacking style', 'style', [['tight', 'Keep it tight'], ['bal', 'Balanced'], ['wide', 'Run it wide']], 'Tight leans on the forwards and wins more penalties. Wide leans on the backs.') +
+  return f('Mentality', 'ment', [['def', 'Defensive'], ['bal', 'Balanced'], ['att', 'Attacking']], 'Attacking raises the try rate at both ends, which suits the stronger side and the chase for a try bonus. Defensive keeps an underdog in the game.') +
+    f('Attacking style', 'style', [['tight', 'Keep it tight'], ['bal', 'Balanced'], ['wide', 'Run it wide']], 'Tight sends your forwards at their forward defence and wins more penalties. Wide sends your backs at their back defence. Check the opposition report for the softer side.') +
     f('Kicking game', 'kickg', [['hand', 'Keep ball in hand'], ['bal', 'Balanced'], ['terr', 'Kick for territory']], 'Territory gives you more of the play if your kickers are better, with fewer tries either way. Ball in hand scores more, risks more and tires players.') +
     f('Penalties', 'pens', [['goal', 'Kick at goal'], ['mix', 'Mixed'], ['corner', 'Kick to the corner']], 'The corner needs a good lineout and a strong maul.') +
     f('Lineout calls', 'lineout', [['safe', 'Safe ball'], ['mix', 'Mixed'], ['long', 'Throw long']], 'Safe ball is rarely stolen but the maul scores less. Long throws are stolen more and score more.') +
-    f('Defensive line', 'def', [['drift', 'Drift'], ['bal', 'Balanced'], ['blitz', 'Blitz']], 'Blitz concedes fewer tries and more penalties and cards. Drift is the reverse.') +
+    f('Defensive line', 'def', [['drift', 'Drift'], ['bal', 'Balanced'], ['blitz', 'Blitz']], 'Blitz rattles ordinary half-backs but good ones play through it, and it gives away more penalties and cards. Drift gives up a little ground and few penalties.') +
     f('Tackling', 'tackle', [['easy', 'Stay on feet'], ['norm', 'Normal'], ['hard', 'Hard']], 'Hard tackling defends better but brings more penalties, cards and injuries.') +
-    f('Breakdown', 'ruck', [['few', 'Commit few'], ['bal', 'Balanced'], ['hard', 'Contest everything']], 'Contesting wins more ball and gives away more penalties. Committing few keeps more men in the defensive line.') +
-    f('Tempo', 'tempo', [['slow', 'Slow'], ['norm', 'Normal'], ['fast', 'Fast']], 'Fast makes more happen for both sides and tires your players sooner.') +
+    f('Breakdown', 'ruck', [['few', 'Commit few'], ['bal', 'Balanced'], ['hard', 'Contest everything']], 'Contesting wins more ball and gives away more penalties, which hurts against a good goal kicker. Committing few keeps more men in the defensive line.') +
+    f('Tempo', 'tempo', [['slow', 'Slow'], ['norm', 'Normal'], ['fast', 'Fast']], 'Fast makes more happen and tires both teams, so it suits the fitter side with the better bench. Slow protects tired legs.') +
     (live ? '' : '<div class="field"><label for="t_captain">Captain</label>' + sel('t_captain', [['', 'No captain']].concat(E.squad(G, G.user).sort(function (a, b) { return b.age - a.age || b.ca - a.ca; }).slice(0, 20).map(function (p) { return [p.id, p.n + ' (' + p.age + ')']; })), tac.captain == null ? '' : tac.captain, 'tac') + '<span class="dim small">With your captain on the pitch the team defends, contests the breakdown and keeps its discipline slightly better.</span></div>') +
     (live ? '' : '<div class="field"><label for="t_kicker">Goal kicker</label>' + sel('t_kicker', [['', 'Best kicker on the pitch']].concat(sq.slice(0, 12).map(function (p) { return [p.id, p.n + ' (' + p.at.Gk + ')']; })), tac.kicker == null ? '' : tac.kicker, 'tac') + '<span class="dim small">Goal kicking out of 20.</span></div>') +
     '<div class="field"><label for="t_autoSubs">Replacements</label>' + sel('t_autoSubs', [['1', 'Assistant makes them'], ['0', 'I make them myself']], tac.autoSubs ? '1' : '0', 'tac') + '<span class="dim small">Pause the match to make changes yourself.</span></div>';
@@ -1591,7 +1670,7 @@ S.finance = function () {
     return '<p><strong>' + d[0] + '</strong>: ' + v(1) + ' guaranteed' + (d[2] ? ', plus ' + v(2) + ' for every league win' : '') + (d[3] ? ', plus ' + v(3) + ' for a top-four finish' : '') + (d[4] ? ' and ' + v(4) + ' more if you win the title' : '') + '. ' + btn('Sign', 'spon', 'data-id="' + k + '"') + '</p>'; }).join('');
   else { var d = E.SPON[F.spon]; sp = '<p><strong>' + d[0] + '</strong>: ' + money(E.sponVal(G, F.spon, 1)) + ' guaranteed' + (d[2] ? ', ' + money(E.sponVal(G, F.spon, 2)) + ' a league win' : '') + (d[3] ? ', ' + money(E.sponVal(G, F.spon, 3)) + ' for the top four' : '') + (d[4] ? ', ' + money(E.sponVal(G, F.spon, 4)) + ' for the title' : '') + '. Paid so far: ' + money(L.spon || 0) + '.</p><p class="dim small">The deal runs to the end of the season. New offers arrive each summer.</p>'; }
   var md = '<div class="fields"><div class="field"><label for="tk">Ticket price</label>' + sel('tk', Object.keys(E.TICKET).map(function (k) { return [k, E.TICKET[k][0]]; }), F.ticket, 'ticket') + '</div></div>' +
-    '<p class="dim small">Capacity ' + cap.toLocaleString('en-GB') + (F.att ? '. Last home game: ' + F.dem.toLocaleString('en-GB') + ' wanted tickets and ' + F.att.toLocaleString('en-GB') + ' got in' : '') + '. Every club has its own following: some sell out whatever happens, others struggle to half-fill the ground. Winning brings more. Cheap tickets draw bigger crowds and slowly grow the fan base; premium tickets earn more per seat but only pay where demand is strong, and slowly shrink it.</p>' + (F.att && F.dem < cap ? '<p class="dim small">The ground is not selling out, so extra seats would stand empty for now.</p>' : F.att ? '<p class="good small">You are turning fans away. More seats would sell.</p>' : '') +
+    '<p class="dim small">Capacity ' + cap.toLocaleString('en-GB') + (F.att ? '. Last home game: ' + F.dem.toLocaleString('en-GB') + ' wanted tickets and ' + F.att.toLocaleString('en-GB') + ' got in' : '') + '. Every club has its own following: some sell out whatever happens, others struggle to half-fill the ground. Winning brings more. Half of each gate arrives on the day and half the week after, so home and away weeks look alike. Cheap tickets draw bigger crowds and slowly grow the fan base; premium tickets earn more per seat but only pay where demand is strong, and slowly shrink it.</p>' + (F.att && F.dem < cap ? '<p class="dim small">The ground is not selling out, so extra seats would stand empty for now.</p>' : F.att ? '<p class="good small">You are turning fans away. More seats would sell.</p>' : '') +
     (F.capBuild ? '<p>Builders are on site: ' + F.capBuild.toLocaleString('en-GB') + ' extra seats open next season.</p>' : F.exp >= E.EXPMAX ? '<p class="dim small">The ground cannot be extended any further.</p>' : '<p>Extend the ground by ' + E.EXPSEATS.toLocaleString('en-GB') + ' seats for ' + money(E.EXPCOST) + '. They open next season. ' + btn('Build', 'stand') + '</p>');
   var sh = '<p><strong>' + E.SHOP[F.shop][0] + '</strong> (level ' + (F.shop + 1) + ' of ' + E.SHOP.length + '). Merchandise this season: ' + money(L.merch || 0) + '.</p><p class="dim small">Shirt sales come from home crowds and from weekly sales, which rise with every star rated 88 or more in your squad.</p>' +
     (F.shop < E.SHOP.length - 1 ? '<p>Upgrade to a ' + E.SHOP[F.shop + 1][0].toLowerCase() + ' for ' + money(E.SHOP[F.shop + 1][1]) + '. ' + btn('Upgrade', 'shop') + '</p>' : '');
@@ -1632,7 +1711,7 @@ S.prematch = function () {
   var extra = '<p class="dim small">Weather: ' + E.WXN[wx] + '. ' + E.WXT[wx] + '</p>' + (dn ? '<p class="warn"><strong>Derby day:</strong> this is ' + dn + '. Expect a bigger crowd, and the result will lift or sink the mood of the squad.</p>' : '') + (mg ? '<p class="small"><strong>' + esc(mg.n) + '</strong>, ' + club(opp).name + ' head coach (' + E.MGS[mg.s][0].toLowerCase() + ', ' + E.relName(mg).toLowerCase() + '): <em>"' + E.mgrLine(G, opp, 3, 2) + '"</em></p>' : '');
   var press = big && !E.isNat(G.user) ? panel('Press conference', asked ? '<p class="dim">' + esc(UI.pressTxt || 'You have spoken to the press.') + '</p>' : '<p>The press want a word before ' + big + '. What is your line?</p><p class="row">' + btn('Talk your team up', 'press', 'data-id="up"') + btn('Play it down', 'press', 'data-id="down"') + btn('Wind up the opposition', 'press', 'data-id="wind"') + '</p><p class="dim small">Talking them up lifts morale but the board expects a result. Winding up the opposition fires up both sides, delights the fans if you win and costs you if you lose.</p>') : '';
   return panel(E.roundLabel(G) + ' · ' + (G.phase === 'final' ? 'Allianz Stadium, Twickenham' : club(f.h).ground), '<div class="pmrow">' + side(f.h) + '<span class="vs">v</span>' + side(f.a) + '</div>' + extra + '<p class="row">' + btn('Kick off', 'kickoff', '', 'go') + btn('Instant result', 'instant') + btn('Change team', 'go', 'data-id="select"') + '</p>') +
-    press + panel(club(opp).name + ': likely XV', table([['No', 'n'], ['Player'], ['Ovr', 'n']], xv));
+    press + reportPanel(opp, wx) + panel(club(opp).name + ': likely XV', table([['No', 'n'], ['Player'], ['Ovr', 'n']], xv));
 };
 (function () { var c0 = S.clubs; S.clubs = function () { return c0() + rivalsPanel(); }; })();
 S.results = function () {
@@ -1695,7 +1774,7 @@ function compareHtml(p) {
   var q = UI.cmp != null && UI.cmp !== p.id ? G.players[UI.cmp] : null; if (!q) return '';
   var ov = function (x) { return known(x) ? E.pubCa(x) : E.est(x).lo + '-' + E.est(x).hi; }, num = function (x) { return known(x) ? E.pubCa(x) : (E.est(x).lo + E.est(x).hi) / 2; };
   var line = function (k, a, b, wa, wb) { return '<tr><td>' + k + '</td><td class="n ' + (wa > wb ? 'good' : '') + '">' + a + '</td><td class="n ' + (wb > wa ? 'good' : '') + '">' + b + '</td></tr>'; };
-  return '<h3>Side by side</h3>' + table([[''], [esc(p.n.split(' ').slice(-1)[0]), 'n'], [esc(q.n.split(' ').slice(-1)[0]), 'n']], [line('Overall', ov(p), ov(q), num(p), num(q)), line('Age', p.age, q.age, -p.age, -q.age), line('Wage', money(p.wage), money(q.wage), -p.wage, -q.wage), line('Value', money(E.estValue(G, p)), money(E.estValue(G, q)), 0, 0)].concat(E.ATTR.map(function (k, i) { return line(E.ATTRN[k], atS(p, k, i), atS(q, k, i), E.pubAt(p, k), E.pubAt(q, k)); })));
+  return '<h3>Side by side</h3>' + table([[''], [esc(p.n.split(' ').slice(-1)[0]), 'n'], [esc(q.n.split(' ').slice(-1)[0]), 'n']], [line('Overall', ov(p), ov(q), num(p), num(q)), line('Age', p.age, q.age, -p.age, -q.age), line('Wage', money(p.wage), money(q.wage), -p.wage, -q.wage), line('Value', money(E.estValue(G, p)), money(E.estValue(G, q)), 0, 0)].concat(E.ATALL.map(function (k, i) { return line(E.ATTRN[k], atS(p, k, i), atS(q, k, i), E.pubAt(p, k), E.pubAt(q, k)); })));
 }
 function shortPanel() {
   var l = (G.short || []).map(function (id) { return G.players[id]; }).filter(function (p) { return p && p.club !== 'RET' && p.club !== G.user; }); if (!l.length) return '';
@@ -1724,18 +1803,18 @@ function modal() {
     var p = G.players[m.id], mine = p.club === G.user, open = E.windowOpen(G);
     body = '<h2>' + esc(p.n) + flags(p) + '</h2><p class="dim">' + E.POSN[p.pos] + ' · ' + (p.club === 'LEG' ? p.leg + ' legend, at his peak' : club(p.club).name + (p.leg ? ' (' + p.leg + ' legend)' : '')) + ' · ' + (NATNAME[p.nat] || p.nat || '') + ' · age ' + p.age + ' · contract to June ' + p.contract + '</p>' + (function () { var h = E.honoursOf(p.n); return h.length ? '<p class="hon"><b>Honours</b><br>' + h.map(function (k) { return esc(HONOURS.awards[k][0]); }).join('<br>') + '</p>' : ''; })() +
       '<div class="tiles t4"><div><span>Overall</span><strong>' + (known(p) ? E.pubCa(p) : E.est(p).lo + '-' + E.est(p).hi) + '</strong></div><div><span>Fitness</span><strong class="' + condCls(p.cond) + '">' + p.cond + '%</strong></div><div><span>Value</span><strong class="sm">' + (known(p) ? '' : 'about ') + money(E.estValue(G, p)) + '</strong></div><div><span>Wage</span><strong class="sm">' + money(p.wage) + '</strong></div></div>' +
-      '<div class="attrs">' + E.ATTR.map(function (k, i) { var v = E.pubAt(p, k), kn = known(p); return '<div><span>' + E.ATTRN[k] + '</span><b class="' + (!kn ? 'dim' : v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + atS(p, k, i) + '</b></div>'; }).join('') + '</div>' +
+      [['Technical', ['Sc', 'Li', 'Ta', 'Ca', 'Bd', 'Pa', 'Ha', 'Ki', 'Gk']], ['Physical', ['Pc', 'St', 'Sg', 'Ag']], ['Mental', ['De', 'Po', 'Wr', 'Di', 'Fl', 'Ax', 'Le', 'Br']]].map(function (g) { return '<h3>' + g[0] + '</h3><div class="attrs">' + g[1].map(function (k) { var i = E.ATALL.indexOf(k), v = E.pubAt(p, k), kn = known(p); return '<div><span>' + E.ATTRN[k] + '</span><b class="' + (!kn ? 'dim' : v >= 16 ? 'good' : v >= 11 ? '' : 'dim') + '">' + atS(p, k, i) + '</b></div>'; }).join('') + '</div>'; }).join('') +
       (known(p) ? '<p>Morale: <b class="' + morL(p)[1] + '">' + morL(p)[0] + '</b>. Coach report: ' + report(p) + '.</p>' : '<p class="warn">Not scouted. Ratings are your staff\'s rough estimate.</p><p class="row">' + (G.scoutQ.indexOf(p.id) >= 0 ? '<span class="good">A scout is watching him. The report arrives after your next match.</span>' : btn('Send a scout', 'scout', 'data-id="' + p.id + '"')) + '<span class="dim small">Scouts free: ' + (E.nScouts(G) - G.scoutQ.length) + ' of ' + E.nScouts(G) + '</span></p>' + (m.serr ? '<p class="bad">' + esc(m.serr) + '</p>' : '')) + '<p class="dim small">Season: ' + p.apps + ' apps, ' + p.tries + ' tries, ' + p.pts + ' points, average rating ' + avgR(p) + ', ' + p.yc + ' yellow, ' + p.rc + ' red.</p>';
     var trs = E.traitsOf(G, p, mine || known(p)), nk = E.nickOf(p); if (trs.length || nk) body += '<p class="small">' + (nk ? 'Known as <strong>"' + nk + '"</strong>. ' : '') + trs.map(function (t) { return '<b class="tag">' + t + '</b>'; }).join(' ') + '</p>';
     body += careerHtml(p) + compareHtml(p) + '<p class="row">' + (mine ? '' : btn((G.short || []).indexOf(p.id) >= 0 ? 'Remove from shortlist' : 'Add to shortlist', 'short', 'data-id="' + p.id + '"')) + btn(UI.cmp === p.id ? 'Stop comparing' : UI.cmp != null ? 'Compare others with him instead' : 'Compare', 'cmp', 'data-id="' + p.id + '"') + (mine && p.gr === 1 ? btn('Promise him a run in the side', 'promise', 'data-id="' + p.id + '"', 'go') : '') + (mine && !p.loan && p.age <= 23 && !E.isNat(G.user) ? btn('Loan to a Championship club', 'loan', 'data-id="' + p.id + '"') : '') + '</p>' + (UI.cmp === p.id ? '<p class="dim small">Now open another player to see the two side by side.</p>' : '') + (mine && p.gr === 2 ? '<p class="bad small">He has asked to leave. Four matches would change his mind.</p>' : mine && p.pr ? '<p class="warn small">You promised him a game. Pick him within three matches.</p>' : '');
-    if (mine && !E.isNat(G.user)) body += '<div class="field"><label for="tr_focus_' + p.id + '">Training focus</label>' + sel('tr_focus_' + p.id, [['', 'None']].concat(E.ATTR.map(function (a) { return [a, E.ATTRN[a] + ' (' + p.at[a] + ')']; })), p.tf || '', 'focus') + '</div>';
+    if (mine && !E.isNat(G.user)) body += '<div class="field"><label for="tr_focus_' + p.id + '">Training focus</label>' + sel('tr_focus_' + p.id, [['', 'None']].concat(E.ATTRAIN.map(function (a) { return [a, E.ATTRN[a] + ' (' + p.at[a] + ')']; })), p.tf || '', 'focus') + '</div>';
     if (mine) body += '<div class="offer"><div class="field"><label for="r_wage">New wage per year (£ thousands)</label><input id="r_wage" type="number" min="0" step="1" value="' + Math.ceil(E.demand(G, p) / 1000) + '"></div><div class="field"><label for="r_years">Years</label>' + sel('r_years', [[1, '1'], [2, '2'], [3, '3'], [4, '4']], 2, 'noop') + '</div>' + btn('Offer new contract', 'renew', 'data-id="' + p.id + '"', 'go') + '</div>' + (m.err ? '<p class="bad">' + esc(m.err) + '</p>' : '') + (m.ok ? '<p class="good">' + esc(m.ok) + '</p>' : '') + '<p class="row">' + btn(p.listed ? 'Take off the transfer list' : 'Put on the transfer list', 'list', 'data-id="' + p.id + '"') + '</p>';
     else if (open) { var v0 = E.estValue(G, p); body += '<div class="offer"><div class="field"><label for="o_fee">Fee (£ thousands)</label><input id="o_fee" type="number" min="0" step="5" value="' + Math.round(v0 * (p.club === 'FA' ? 0 : p.listed ? 0.8 : E.abroad(p.club) ? 1.45 : 1.2) / 1000) + '"></div><div class="field"><label for="o_wage">Wage per year (£ thousands)</label><input id="o_wage" type="number" min="0" step="1" value="' + Math.ceil(p.wage * (E.abroad(p.club) ? 1.2 : 1.1) / 1000) + '"></div>' + btn('Make offer', 'offer', 'data-id="' + p.id + '"', 'go') + '</div>' + (m.err ? '<p class="bad">' + esc(m.err) + '</p>' : '') + '<p class="dim small">You have ' + money(E.tbOf(G)) + ' in the transfer budget and ' + money(E.capInfo(G, G.user).limit - E.capInfo(G, G.user).counted) + ' of cap room. A club that wants more will come back with a counter-offer.</p>'; }
   } else if (m.t === 'slot') {
     var slot = E.SLOTS[m.i], cur = G.clubs[G.user].sel || [];
     var cands = E.squad(G, G.user).sort(function (a, b) { return (E.avail(b) ? 1 : 0) - (E.avail(a) ? 1 : 0) || E.effSlot(b, slot) - E.effSlot(a, slot); });
-    body = '<h2>Number ' + (m.i + 1) + ': ' + E.POSN[slot] + '</h2>' + table([['Player'], ['Pos'], ['Ovr', 'n'], ['Con', 'n'], ['In', 'n']], cands.map(function (p) { var at = cur.indexOf(p.id), ok = E.avail(p);
-      return '<tr class="' + (ok ? 'pickrow' : 'off') + (at === m.i ? ' me' : '') + '"' + (ok ? ' data-a="assign" data-id="' + p.id + '"' : '') + '><td class="nm">' + esc(p.n) + flags(p) + '</td><td class="' + (E.fam(p, slot) === 1 ? 'good' : E.fam(p, slot) >= 0.85 ? 'warn' : 'bad') + '">' + p.pos + '</td><td class="n hi">' + ovrS(p) + '</td><td class="n ' + condCls(p.cond) + '">' + p.cond + '</td><td class="n dim">' + (at >= 0 ? at + 1 : '') + '</td></tr>'; }), 'pick') +
+    var ks = E.keySkills(m.i); body = '<h2>Number ' + (m.i + 1) + ': ' + E.POSN[slot] + '</h2><p class="small">Matters most in this shirt: <b>' + ks.map(function (k) { return E.ATTRN[k]; }).join(', ') + '</b>.</p>' + table([['Player'], ['Pos'], ['Ovr', 'n'], ['Now', 'n'], ['Con', 'n'], ['Key', 'n'], ['In', 'n']], cands.map(function (p) { var at = cur.indexOf(p.id), ok = E.avail(p);
+      return '<tr class="' + (ok ? 'pickrow' : 'off') + (at === m.i ? ' me' : '') + '"' + (ok ? ' data-a="assign" data-id="' + p.id + '"' : '') + '><td class="nm">' + esc(p.n) + flags(p) + '</td><td class="' + (E.fam(p, slot) === 1 ? 'good' : E.fam(p, slot) >= 0.85 ? 'warn' : 'bad') + '">' + p.pos + '</td><td class="n">' + ovrS(p) + '</td><td class="n ' + (nowCls(p, slot) || 'hi') + '">' + E.nowOf(p, slot) + '</td><td class="n ' + condCls(p.cond) + '">' + p.cond + '</td><td class="n">' + Math.round(ks.reduce(function (t, k) { return t + (E.pubAt(p, k) || 0); }, 0) / ks.length) + '</td><td class="n dim">' + (at >= 0 ? at + 1 : '') + '</td></tr>'; }), 'pick') + '<p class="dim small">Key is his average, out of 20, in the skills that matter most here.</p>' +
       '<p class="row">' + btn('Leave empty', 'assign', 'data-id="-1"') + '</p>';
   } else if (m.t === 'sub') {
     var s = MT.M.sides[MT.u];
@@ -1888,7 +1967,7 @@ var C = {
   tac: function (el) { var k = el.id.slice(2), tac = MT ? MT.M.sides[MT.u].tac : G.clubs[G.user].tac, v = el.value;
     if (k === 'kicker' || k === 'captain') tac[k] = v === '' ? null : +v; else if (k === 'autoSubs') { tac.autoSubs = v === '1'; if (MT) MT.M.sides[MT.u].auto = tac.autoSubs; } else tac[k] = v;
     if (MT) { var keep = G.clubs[G.user].tac; if (k !== 'kicker' && k !== 'captain') keep[k] = tac[k]; } save(); },
-  sq: function () { UI.sq.pos = $('sq_pos').value; UI.sq.view = $('sq_view').value; if (UI.sq.view === 'main' && E.ATTR.indexOf(UI.sq.k) >= 0) { UI.sq.k = 'pos'; UI.sq.d = 1; } },
+  sq: function () { UI.sq.pos = $('sq_pos').value; UI.sq.view = $('sq_view').value; if (E.ATALL.indexOf(UI.sq.k) >= 0) { UI.sq.k = 'pos'; UI.sq.d = 1; } },
   noop: function () {},
   tf: function () { var lg = $('f_lg').value; UI.tf = {pos: $('f_pos').value, lg: lg, name: $('f_name').value.trim(), club: lg !== UI.tf.lg ? '' : $('f_club').value, listed: $('f_listed').value === '1', sort: $('f_sort').value}; },
   fixround: function (el) { UI.fixRound = +el.value; },
